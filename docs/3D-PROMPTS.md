@@ -4,7 +4,8 @@ Website đang dùng mô hình 3D dựng bằng code: đúng hình khối, nhưng
 
 ## 0. Cách làm cho mỗi mô hình
 
-**Cách nhanh nhất:** mỗi mô hình đã có sẵn một tệp lời nhắc điền đủ, không còn chỗ trống, trong thư mục `D:\Rum website\ctyanduong\ctyanduong\docsaea\x60 (01-be-tong.txt đến 31-chi-tiet-chong-tham.txt). Bảo raea làm lần lượt theo từng tệp. Phần dưới đây là nguồn để tạo các tệp đó; sửa lời nhắc ở đây rồi chạy lại để cập nhật.
+**Cách nhanh nhất:** mỗi mô hình đã có sẵn một tệp lời nhắc điền đủ, không còn chỗ trống, trong thư mục `D:\Rum website\ctyanduong\ctyanduong\docs\raea\` (01-be-tong.txt đến 31-chi-tiet-chong-tham.txt). Bảo raea làm lần lượt theo từng tệp. Phần dưới đây là nguồn để tạo các tệp đó; sửa lời nhắc ở đây rồi chạy `tools\make-raea-prompts.py` để cập nhật.
+aea\x60 (01-be-tong.txt đến 31-chi-tiet-chong-tham.txt). Bảo raea làm lần lượt theo từng tệp. Phần dưới đây là nguồn để tạo các tệp đó; sửa lời nhắc ở đây rồi chạy lại để cập nhật.
 
 raea đọc và ghi thẳng trên máy, nên mọi đường dẫn trong tài liệu này là đường dẫn trên ổ D:. Thư mục gốc của website: `D:\Rum website\ctyanduong\ctyanduong`.
 
