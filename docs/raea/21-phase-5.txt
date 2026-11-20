@@ -1,0 +1,98 @@
+MODEL 21 OF 31: phase-5
+
+FILES (read and write directly on this computer)
+- Source model to rebuild (read only): D:\Rum website\ctyanduong\ctyanduong\models\source\phase-5.glb
+- Screenshot of how it looks on the website now (read only): D:\Rum website\ctyanduong\ctyanduong\models\reference\phase-5.png
+- Real ADDC photos to match materials and the site look (read only; a folder means pick the relevant shots in it):
+  D:\Rum website\ctyanduong\ctyanduong\img\fb\nhapho2022
+  D:\Rum website\ctyanduong\ctyanduong\img\fb\log\12.jpg
+- Save the finished model as: D:\Rum website\ctyanduong\ctyanduong\models\phase-5.glb
+- Never modify, move or delete anything in models\source, models\reference, img, js, css, docs or any .html file.
+
+ROLE
+You are a senior archviz 3D artist. You are rebuilding an existing low-detail 3D model as a
+photoreal, production-quality asset for the website of ADDC (An Duong Design + Construction),
+an architecture, construction and interior company in Ho Chi Minh City, Vietnam.
+
+WHO SEES IT
+Homeowners in Vietnam about to spend their savings on building a house. They must feel they are
+looking at a photograph of a real object on a real ADDC building site or in a real finished home,
+never at a game asset, a toy, a clay render or a "3D model". If any part looks blocky, faceted,
+plasticky, too clean or too uniform, the asset has failed.
+
+KEEP EXACTLY (non-negotiable)
+- Silhouette, proportions, part layout, position, orientation and real-world scale of the attached
+  .glb. Overlay your result on the original: outer bounds must match within 1 cm.
+- Units: metres. Y-up. Origin at the centre of the base footprint, object resting on y = 0.
+- Every separate part stays a separate, sensibly named mesh (do not merge everything into one).
+
+MAKE IT REAL: GEOMETRY
+- No visible faceting anywhere. Curves get enough segments to look round at close range:
+  at least 32 segments on pipes, legs, bars and rims, 64 on round tables and pendant shades.
+  Smooth shading with correct hard edges (auto-smooth about 30 degrees).
+- Every hard edge gets a real bevel or chamfer (1 to 3 mm on furniture and metal, 3 to 8 mm on
+  concrete, stone and timber) so the edges catch light. No knife-sharp CG edges.
+- Real thicknesses: glass has thickness (not a single plane), sheet metal 1 to 2 mm, door gaps
+  2 to 4 mm, worktops and shelves at their real thickness.
+- Real construction: visible joinery where rails meet legs, screw or pin heads where they would
+  be, sewn seams and welts on upholstery, mortar joints set back 3 to 5 mm from the brick face,
+  rebar ribs modelled, tie wire twisted at crossings.
+- Natural irregularity: nothing perfectly repeated. Bricks, tiles, planks, bars and cushions each
+  differ slightly in size, angle, colour and wear. Fabric has gentle creases and sag; cushions are
+  plump, not boxes. Stacked items are not perfectly aligned.
+
+MAKE IT REAL: MATERIALS (glTF 2.0 PBR metallic-roughness)
+- Every material has: base colour, normal map and an occlusion-roughness-metallic map (ORM).
+  Roughness must VARY across the surface (wear, dust, polish, damp). A flat single roughness
+  value is not acceptable.
+- Base colour holds no lighting: no baked shadows, no baked highlights, no baked sky.
+  Keep albedo in the physically valid range (no pure black below #1A1A1A, no pure white above #F0F0F0).
+- Use real-world texel density: about 1024 px per metre for furniture and materials,
+  512 px per metre for whole buildings. No stretched or visibly tiling textures; break tiling with
+  variation and decals (dust, stains, water marks, scuffs).
+- Subtle realism layers: edge wear on corners, dust in crevices, slight colour shift between
+  pieces, fingerprints-level micro detail on metal and glass (very subtle).
+- Allowed glTF extensions (the website supports them): KHR_materials_transmission + KHR_materials_ior
+  + KHR_materials_volume for glass and water, KHR_materials_clearcoat for lacquer, polished stone and
+  car-paint-like finishes, KHR_materials_sheen for fabric, KHR_texture_transform.
+  Leaves, netting and grass use alpha cut-out (alphaMode MASK), not alpha blend.
+- Reference values (adjust within reason):
+  raw concrete roughness 0.80 to 0.95, dark mill-scale steel metallic 1 roughness 0.55 to 0.75 with
+  rust patches metallic 0 roughness 0.9, oiled oak roughness 0.45 to 0.6, matte lacquer roughness
+  0.35 plus a thin clearcoat, polished marble roughness 0.05 to 0.12 plus clearcoat, brushed brass
+  metallic 1 roughness 0.25 to 0.35, powder-coated aluminium roughness 0.45, glass transmission 1
+  roughness 0.02 ior 1.52, woven fabric roughness 0.85 to 0.95 with sheen.
+
+HOW THE WEBSITE SHOWS IT (so it holds up)
+- Rendered live in Three.js r160 with ACES filmic tone mapping, a neutral studio environment map
+  and one warm soft sun with soft shadows. Background is either deep moss green (#22392B) or warm
+  stone (#EFEBE0). The site's accent is brushed brass (#B48A45).
+- The visitor can orbit 360 degrees and zoom in close on a 2460 px wide screen, so the object must
+  hold up from every side and at close range, including the underside a camera can see.
+
+OUTPUT
+- Save to the path given in FILES, writing only that one file.
+- One .glb (glTF 2.0 binary), all textures embedded as JPEG (PNG only where alpha is needed).
+- No Draco, no Meshopt, no KTX2 compression (the site's loader does not decode them).
+- Budget per single object: under 80k triangles and 8 MB. Rooms, houses and construction stages:
+  under 300k triangles and 20 MB. Textures 2048 px max; 1024 px for small parts.
+- No text, logos, watermarks, people, ground plane, sky, backdrop, cameras or lights inside the file.
+
+CONSTRUCTION SEQUENCE
+This is stage 6 of a 7-stage construction sequence of the same townhouse (phase-0.glb is stage 1,
+phase-6.glb is stage 7). Keep every element that exists in the attached model exactly where it is;
+add nothing from later stages. It must look like a photograph of a real Ho Chi Minh City building
+site at this stage, the way ADDC's own sites look in the attached photos:
+- blue corrugated steel hoarding along the street, slightly dented and dusty, with a white and blue
+  site board on two steel posts (leave the board blank, no text);
+- blue safety netting on galvanised steel tube scaffolding with timber or steel planks, netting
+  sagging slightly and tied at intervals (alpha cut-out mesh texture);
+- a red hydraulic pile-pressing rig stacked with brown precast concrete counterweight blocks;
+- site life without people: a few bags of cement, a sand pile, a stack of hollow bricks, a wheelbarrow,
+  rebar offcuts, a water hose, puddles and mud on the ground, footprints and tyre marks.
+Raw concrete looks freshly cast (darker, damp) on the newest elements and dry and lighter on older ones.
+Name every temporary-works mesh (hoarding, scaffolding, netting, props, rig, site clutter) with the
+prefix "Temp_" so the website's "hide temporary works" switch can hide them.
+
+THIS MODEL
+Finishes: scaffolding removed, all walls rendered and painted off-white, glass shopfront and upper glazing installed with protective film still on some panes, glass balconies, walnut entrance door, vertical oak screen on the facade. Paint buckets and a ladder by the door. Hoarding still on the street.
