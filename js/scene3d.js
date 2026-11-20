@@ -1420,7 +1420,7 @@ async function initJourney(el) {
 }
 
 /* Builders exposed for export-3d.html, which turns the procedural models into GLB files for the 3D tool. */
-export { makeMats, SAMPLES, FURNITURE, buildHouse, applyParts, buildRoom, fitTo };
+export { makeMats, SAMPLES, FURNITURE, DETAILS, buildHouse, applyParts, buildRoom, fitTo };
 
 /* ---------- Boot ---------- */
 const boot = { journey: initJourney, materials: initMaterials, furniture: initFurniture, details: initDetails, build: initBuild, blueprint: initBlueprint, room: initRoom };

@@ -22,7 +22,7 @@
   <script type="module">
     import * as THREE from 'three';
     import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
-    import { makeMats, SAMPLES, FURNITURE, buildHouse, applyParts, buildRoom } from '../js/scene3d.js';
+    import { makeMats, SAMPLES, FURNITURE, DETAILS, buildHouse, applyParts, buildRoom } from '../js/scene3d.js';
 
     const exporter = new GLTFExporter();
     const toGLB = obj => exporter.parseAsync(obj, { binary: true, onlyVisible: true });
@@ -32,6 +32,12 @@
       const files = {};
       for (const id of Object.keys(SAMPLES)) files[id] = await toGLB(SAMPLES[id](M));
       for (const id of Object.keys(FURNITURE)) files[`noi-that-${id}`] = await toGLB(FURNITURE[id](M));
+      // Construction details: each part is named step<N>_<n> so the website can still build them up step by step.
+      for (const id of Object.keys(DETAILS)) {
+        const d = DETAILS[id](M);
+        d.parts.forEach((p, i) => { p.obj.name = `step${p.step}_${i}`; });
+        files[`chi-tiet-${id}`] = await toGLB(d.g);
+      }
       for (let i = 0; i < 7; i++) {
         const h = buildHouse(M);
         applyParts(h.parts, i + 1);
