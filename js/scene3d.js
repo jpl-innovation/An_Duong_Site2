@@ -6,9 +6,12 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 export const MODELS = {
-  'be-tong': '', thep: '', gach: '', da: '', go: '', 'gach-op': '', kinh: '',
+  'be-tong': '', thep: '', gach: '', da: '', go: '', 'gach-op': '', kinh: '', terrazzo: '',
+  // nội thất page, furniture viewer, e.g. sofa: 'models/noi-that-sofa.glb'
+  sofa: '', 'ban-tra': '', 'ban-an': '', 'ghe-an': '', 'tu-bep': '', giuong: '', 'tu-ao': '', 'ban-lam-viec': '', 'ke-sach': '',
   house: '',                          // kiến trúc page, e.g. 'models/house.glb'
   room: '',                           // nội thất page, e.g. 'models/room.glb'
   phases: ['', '', '', '', '', '', ''] // thi công page, one cumulative model per phase, e.g. 'models/phase-0.glb'
@@ -123,6 +126,53 @@ const T = {
     for (let i = 0; i < 70; i++) { g.globalAlpha = .12; g.fillStyle = pick(['#8f8a7f', '#cfcac0', '#a39e93']); g.beginPath(); g.arc(rnd() * w, rnd() * h, 20 + rnd() * 60, 0, 7); g.fill(); }
     g.filter = 'none'; g.globalAlpha = 1;
     speckle(g, w, h, 6000, ['#8f8a7f', '#cfcac0'], 1, 2, .08, .25);
+  }),
+  // Terrazzo: cement ground with marble and glass chips (as in the Sunwah Pearl and Pham Van Bach projects).
+  terrazzo: () => tex(512, 512, (g, w, h) => {
+    g.fillStyle = '#e4ded2'; g.fillRect(0, 0, w, h);
+    speckle(g, w, h, 6000, ['#d6cfc1', '#efeae1'], 1, 2, .2, .5);
+    for (let i = 0; i < 900; i++) {
+      g.fillStyle = pick(['#b9b1a3', '#8c8478', '#d9cdb8', '#6f7d72', '#c49a7a', '#f4f1ea']);
+      g.globalAlpha = .65 + rnd() * .35;
+      const x = rnd() * w, y = rnd() * h, r = 1.5 + rnd() * 6;
+      g.beginPath(); g.moveTo(x + r, y);
+      for (let k = 1; k < 6; k++) { const a = k / 6 * Math.PI * 2 + rnd() * .5; g.lineTo(x + Math.cos(a) * r * (.6 + rnd() * .6), y + Math.sin(a) * r * (.6 + rnd() * .6)); }
+      g.closePath(); g.fill();
+    }
+    g.globalAlpha = 1;
+  }),
+  // Encaustic cement tile (gạch bông), 20 x 20 cm, as in Villa Ho Tram.
+  encaustic: () => tex(256, 256, (g, w, h) => {
+    g.fillStyle = '#e8e0cf'; g.fillRect(0, 0, w, h);
+    const c = w / 2;
+    g.fillStyle = '#3f5f55';
+    for (let k = 0; k < 4; k++) { g.save(); g.translate(c, c); g.rotate(k * Math.PI / 2); g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(40, -70, 0, -118); g.quadraticCurveTo(-40, -70, 0, 0); g.fill(); g.restore(); }
+    g.fillStyle = '#c0663e'; g.beginPath(); g.arc(c, c, 22, 0, 7); g.fill();
+    g.fillStyle = '#d9a441';
+    [[0, 0], [w, 0], [0, h], [w, h]].forEach(([x, y]) => { g.beginPath(); g.arc(x, y, 38, 0, 7); g.fill(); });
+    g.strokeStyle = '#3f5f55'; g.lineWidth = 4; g.strokeRect(2, 2, w - 4, h - 4);
+    speckle(g, w, h, 1500, ['rgba(0,0,0,.25)'], 1, 2, .05, .12);
+  }),
+  // Site board on the hoarding: white logo panel and blue information panel.
+  siteBoard: () => tex(1024, 256, (g, w, h) => {
+    g.fillStyle = '#f4f4f1'; g.fillRect(0, 0, w * .48, h);
+    g.fillStyle = '#1f4fa3'; g.fillRect(w * .48, 0, w * .52, h);
+    g.fillRect(40, 70, 70, 70);
+    g.fillStyle = '#1f4fa3'; g.font = '600 58px Arial, sans-serif'; g.fillText('AN DUONG', 128, 128);
+    g.font = '500 24px Arial, sans-serif'; g.fillText('DESIGN + CONSTRUCTION', 130, 172);
+    g.fillStyle = '#ffffff'; g.font = '600 38px Arial, sans-serif'; g.fillText('BIỂN BÁO CÔNG TRÌNH', w * .52, 70);
+    g.globalAlpha = .7; for (let i = 0; i < 5; i++) g.fillRect(w * .52, 100 + i * 28, (.3 + rnd() * .14) * w, 8);
+    g.globalAlpha = 1;
+  }, 1, 1),
+  // Blue safety net over scaffolding, as on ADDC sites.
+  net: () => tex(128, 128, (g, w, h) => {
+    g.fillStyle = 'rgba(28,70,170,.22)'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = 'rgba(70,120,230,.55)'; g.lineWidth = 1;
+    for (let i = 0; i <= w; i += 8) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, h); g.stroke(); g.beginPath(); g.moveTo(0, i); g.lineTo(w, i); g.stroke(); }
+  }),
+  hoarding: () => tex(128, 128, (g, w, h) => {
+    g.fillStyle = '#2d58b0'; g.fillRect(0, 0, w, h);
+    for (let x = 0; x < w; x += 16) { g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(x, 0, 6, h); g.fillStyle = 'rgba(0,0,0,.15)'; g.fillRect(x + 10, 0, 4, h); }
   })
 };
 
@@ -146,7 +196,8 @@ function makeMats() {
     floorWood: std({ map: T.wood('#b48a5f', '#6a4526', true), roughness: .5 }),
     tile: std({ map: T.tile(), roughness: .32 }),
     cement: std({ color: '#8d897f', roughness: 1 }),
-    glass: new THREE.MeshPhysicalMaterial({ color: '#d7e4df', metalness: 0, roughness: .04, transmission: .92, thickness: .05, ior: 1.5, transparent: true, opacity: .55 }),
+    // Plain transparent glass: physical transmission re-rendered the whole scene every frame and stalled scrolling.
+    glass: std({ color: '#cfe0dc', metalness: .2, roughness: .06, transparent: true, opacity: .32, depthWrite: false, envMapIntensity: 1.4 }),
     alu: std({ color: '#2f3133', metalness: .75, roughness: .35 }),
     plaster: std({ map: T.plaster('#efe9da'), roughness: .95 }),
     membrane: std({ color: '#3f3d38', roughness: .7 }),
@@ -162,8 +213,18 @@ function makeMats() {
     microcement: std({ map: T.microcement(), roughness: .7 }),
     paintCream: std({ map: T.plaster('#ece5d2'), roughness: .95 }),
     paintMoss: std({ map: T.plaster('#4f6a57'), roughness: .95 }),
-    clay: std({ color: '#f1ece0', roughness: .9 })
+    clay: std({ color: '#f1ece0', roughness: .9 }),
+    terrazzo: std({ map: T.terrazzo(), roughness: .35 }),
+    encaustic: std({ map: T.encaustic(), roughness: .55 }),
+    pressRed: std({ color: '#a8432c', metalness: .5, roughness: .55 }),
+    weight: std({ color: '#7d5a3c', roughness: .95 }),
+    spunPile: std({ color: '#a9a69e', roughness: .85 }),
+    tube: std({ color: '#9aa0a4', metalness: .7, roughness: .4 }),
+    net: std({ map: T.net(), transparent: true, depthWrite: false, side: THREE.DoubleSide, roughness: 1 }),
+    hoarding: std({ map: T.hoarding(), roughness: .6, metalness: .2 }),
+    siteBoard: std({ map: T.siteBoard(), roughness: .8 })
   };
+  m.net.map.repeat.set(6, 3); m.hoarding.map.repeat.set(4, 1);
   m.marbleFloor = m.marble.clone(); m.marbleFloor.map = T.marble(); m.marbleFloor.map.repeat.set(2, 2);
   m.microcement.map.repeat.set(2, 2);
   m.floorWood.map.repeat.set(2, 2);
@@ -197,6 +258,12 @@ const loader = new GLTFLoader();
 const loadGLB = url => new Promise((res, rej) => loader.load(url, g => res(g.scene), undefined, rej));
 
 /* ---------- Stage: renderer, camera, light, render-on-visible ---------- */
+// Heavy one-off work (building a model, compiling its shaders) waits for a pause in scrolling, so it never
+// lands in the middle of a scroll. A stage that is about to be seen is still built at once by the lazy observer.
+let lastScroll = 0;
+addEventListener('scroll', () => { lastScroll = performance.now(); }, { passive: true });
+const whenQuiet = f => { const check = () => (performance.now() - lastScroll > 300 ? f() : setTimeout(check, 150)); check(); };
+
 function makeStage(el, { paper = false, cam = [4, 3, 5], target = [0, .8, 0], orbit = true, auto = true, exposure = 1 } = {}) {
   let renderer;
   try {
@@ -211,6 +278,13 @@ function makeStage(el, { paper = false, cam = [4, 3, 5], target = [0, .8, 0], or
   renderer.toneMappingExposure = exposure;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // Shadows are redrawn on every second rendered frame, not every frame: the light never follows the camera,
+  // and the shadow pass (six passes for the room's lamp) was the largest share of each frame on laptop graphics.
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.needsUpdate = true;
+  const _render = renderer.render.bind(renderer);
+  let shadowTick = 0;
+  renderer.render = (sc, cam) => { if (shadowTick++ % 2 === 0) renderer.shadowMap.needsUpdate = true; _render(sc, cam); };
   el.prepend(renderer.domElement);
   renderer.domElement.setAttribute('aria-hidden', 'true');
 
@@ -249,7 +323,11 @@ function makeStage(el, { paper = false, cam = [4, 3, 5], target = [0, .8, 0], or
 
   const ticks = [];
   const clock = new THREE.Clock();
-  const tick = () => {
+  // The model is drawn at most 60 times a second; on 120 and 240 Hz screens the page itself keeps the full rate.
+  let lastDraw = 0;
+  const tick = now => {
+    if (now - lastDraw < 15.5) return;
+    lastDraw = now;
     const dt = Math.min(clock.getDelta(), .05);
     ticks.forEach(f => f(dt));
     controls.update();
@@ -258,6 +336,8 @@ function makeStage(el, { paper = false, cam = [4, 3, 5], target = [0, .8, 0], or
   const resize = () => {
     const w = el.clientWidth, h = el.clientHeight;
     if (!w || !h) return;
+    // Pixel budget: a full-width stage on a large screen is drawn at about two million pixels at most.
+    renderer.setPixelRatio(Math.max(.6, Math.min(devicePixelRatio, 1.5, Math.sqrt(2.1e6 / (w * h)))));
     renderer.setSize(w, h, false);
     camera.aspect = w / h; camera.updateProjectionMatrix();
   };
@@ -269,11 +349,12 @@ function makeStage(el, { paper = false, cam = [4, 3, 5], target = [0, .8, 0], or
   }, { rootMargin: '120px' }).observe(el);
 
   // Compile shaders and upload textures before the stage is seen, so its first visible frame is cheap.
-  setTimeout(() => {
-    const warm = () => renderer.render(scene, camera);
-    (renderer.compileAsync ? renderer.compileAsync(scene, camera) : Promise.resolve())
-      .then(() => ('requestIdleCallback' in window ? requestIdleCallback(warm) : warm())).catch(() => {});
-  }, 300);
+  setTimeout(() => whenQuiet(() => {
+    const warm = () => { renderer.shadowMap.needsUpdate = true; renderer.render(scene, camera); };
+    // A real frame (textures, shadow map, environment) is drawn now, on a timer: waiting for an idle moment
+    // never came while another stage was animating, and the first visible frame then froze the scroll.
+    (renderer.compileAsync ? renderer.compileAsync(scene, camera) : Promise.resolve()).then(warm).catch(warm);
+  }), 600);
 
   return { renderer, scene, camera, controls, sun, hemi, catcher, ticks, ready: () => el.classList.add('ready') };
 }
@@ -375,6 +456,15 @@ const SAMPLES = {
       block(p, H, d, M.alu, -W / 2 + p / 2, 0, 0), block(p, H, d, M.alu, W / 2 - p / 2, 0, 0), block(p * .7, H, d, M.alu, 0, 0, 0));
     g.add(block(W - p * 2, H - p * 2, .02, M.glass, 0, p, 0));
     g.add(block(.5, .5, .5, M.concrete, .45, 0, -.7));
+    return g;
+  },
+  terrazzo: M => {
+    const g = new THREE.Group();
+    const slab = mesh(new RoundedBoxGeometry(1.8, .06, 1.1, 2, .012), M.terrazzo, 0, .03, 0); slab.rotation.y = .3; g.add(slab);
+    const top = mesh(new RoundedBoxGeometry(1.2, .05, .7, 2, .012), M.terrazzo, -.15, .55, -.25); top.rotation.set(-.95, .3, 0); g.add(top);
+    const s = .4, gap = .015;
+    [[0, 0], [1, 0], [0, 1], [1, 1]].forEach(([i, j]) => g.add(block(s, .03, s, M.encaustic, .55 + i * (s + gap), .06, .2 + j * (s + gap))));
+    const lifted = block(s, .03, s, M.encaustic, .1, .32, .75); lifted.rotation.set(-.4, -.3, .1); g.add(lifted);
     return g;
   }
 };
@@ -814,12 +904,45 @@ function buildHouse(M) {
   });
   for (let f = 0; f < FLOORS; f++) add(block(f ? 4.5 : 2.3, f ? H - 1.4 : 2.8, .02, M.warm, f ? -.3 : .6, lvl(f) + (f ? 1.05 : 0), D / 2 - .3), 6, .7 + f * .08, 'pop');
 
+  // Temporary works seen on ADDC sites, removed before handover:
+  // pile press with stacked counterweight blocks and spun piles (phase 0), blue hoarding with site board, blue-net scaffolding.
+  const temp = (obj, phase, t, until, mode = 'grow') => { add(obj, phase, t, mode); parts[parts.length - 1].until = until; return obj; };
+  const press = new THREE.Group();
+  press.add(block(2.8, .28, 1.5, M.pressRed, 0, 0, 0));
+  [-.38, .38].forEach(x => press.add(block(.2, 5.6, .2, M.pressRed, x, .28, 0)));
+  press.add(block(1, .3, .5, M.pressRed, 0, 5.6, 0), block(.9, .5, .6, M.pressRed, 0, 3.2, 0));
+  press.add(mesh(new THREE.CylinderGeometry(.15, .15, 3.6, 14).translate(0, 1.8, 0), M.spunPile, 0, .2, 0));
+  [-1.05, 1.05].forEach(x => { for (let r = 0; r < 5; r++) press.add(block(.62, .4, 1.4, M.weight, x + (r % 2 ? .03 : -.03), .28 + r * .41, 0)); });
+  press.position.set(-1.6, 0, -1.2);
+  temp(press, 0, 0, 1.45);
+  const pileStack = new THREE.Group();
+  [[0, 0], [.32, 0], [.64, 0], [.16, .28], [.48, .28]].forEach(([x, y]) => { const c = mesh(new THREE.CylinderGeometry(.15, .15, 4.2, 14), M.spunPile, x, .15 + y, 0); c.rotation.x = Math.PI / 2; pileStack.add(c); });
+  pileStack.position.set(4.3, 0, 1);
+  temp(pileStack, 0, .1, .9, 'pop');
+  const gate = new THREE.Group(), fz = D / 2 + 3.6;
+  [[-3.25, 3.7], [3.25, 3.7]].forEach(([x, w]) => gate.add(block(w, 2.2, .06, M.hoarding, x, 0, 0)));
+  [-1.4, 1.4].forEach(x => gate.add(block(.14, 3.3, .14, M.tube, x, 0, 0)));
+  gate.add(block(3.6, .9, .08, M.siteBoard, 0, 3.0, 0));
+  gate.position.set(0, 0, fz);
+  temp(gate, 0, .05, 6.05);
+  for (let f = 0; f < FLOORS + 1; f++) {
+    const sc = new THREE.Group(), y = lvl(f), hh = f < FLOORS ? H : 1.4, z0 = D / 2 + .55, z1 = D / 2 + 1.25;
+    for (let i = 0; i < 7; i++) [z0, z1].forEach(z => sc.add(block(.05, hh, .05, M.tube, -3.6 + i * 1.2, 0, z)));
+    [hh * .5, hh - .05].forEach(yy => [z0, z1].forEach(z => sc.add(block(7.3, .05, .05, M.tube, 0, yy, z))));
+    sc.add(block(7.4, .04, .75, M.oak, 0, hh - .1, (z0 + z1) / 2));
+    sc.add(block(7.5, hh, .02, M.net, 0, 0, z1 + .04));
+    sc.traverse(o => { if (o.isMesh) o.castShadow = false; });
+    sc.position.y = y;
+    temp(sc, 2, f / FLOORS * .95, 5.55);
+  }
+
   return { group: g, parts };
 }
 
 function applyParts(parts, pf) {
   parts.forEach(p => {
-    const a = clamp((pf - p.phase - p.t * .7) / .3, 0, 1);
+    // Temporary works (`until`) shrink away again once their phase is over.
+    const a = Math.min(clamp((pf - p.phase - p.t * .7) / .3, 0, 1), p.until === undefined ? 1 : clamp((p.until - pf) / .3, 0, 1));
     const o = p.obj;
     o.visible = a > 0;
     if (!o.visible) return;
@@ -854,6 +977,12 @@ async function initBuild(el) {
     catch (e) { console.warn('GLB lỗi, dùng mô hình dựng sẵn', e); glbPhases = []; }
   }
   if (!glbPhases.length) { house = buildHouse(M); st.scene.add(house.group); }
+  // Compile every part once, all visible, so no shader is built mid-scroll at a phase change.
+  if (house) {
+    house.parts.forEach(pt => { pt.obj.visible = true; });
+    try { if (st.renderer.compileAsync) await st.renderer.compileAsync(st.scene, st.camera); } catch (e) {}
+    st.renderer.shadowMap.needsUpdate = true; st.renderer.render(st.scene, st.camera);
+  }
   st.sun.position.set(10, 18, 12);
 
   const ui = {
@@ -893,14 +1022,31 @@ async function initBuild(el) {
   read();
   pf = target;
 
+  // Visitor options: day or night light, and whether the temporary works (hoarding, pile press, scaffolding) show.
+  let hideTemp = false;
+  const env0 = st.scene.environment;
+  const opts = {
+    temp: v => { hideTemp = v === 'an'; },
+    light: v => {
+      const night = v === 'toi';
+      st.sun.intensity = night ? .18 : 2.4; st.hemi.intensity = night ? .08 : .55;
+      st.scene.environment = night ? null : env0; st.renderer.toneMappingExposure = night ? 1.3 : 1.05;
+    }
+  };
+  document.querySelectorAll('[data-build-opt]').forEach(b => b.addEventListener('click', () => {
+    const k = b.dataset.buildOpt;
+    document.querySelectorAll(`[data-build-opt="${k}"]`).forEach(x => { x.classList.toggle('active', x === b); x.setAttribute('aria-pressed', x === b); });
+    opts[k](b.dataset.v);
+  }));
   st.ticks.push(dt => {
     pf += (target - pf) * Math.min(1, dt * (reduced ? 60 : 5));
-    if (house) applyParts(house.parts, pf);
+    if (house) { applyParts(house.parts, pf); if (hideTemp) house.parts.forEach(pt => { if (pt.until !== undefined) pt.obj.visible = false; }); }
     const k = pf / N;
     const goal = .75 - k * 1.2;
     ang += (goal - ang) * Math.min(1, dt * 3);
     // Start close on the piles, pull back as the house rises.
-    const R = 15 + k * 16, h = 8 + k * 5;
+    const narrow = el.clientWidth < el.clientHeight * 1.15 ? 1.75 : 1;
+    const R = (15 + k * 16) * narrow, h = (8 + k * 5) * (narrow > 1 ? 1.3 : 1);
     st.camera.position.set(Math.sin(ang) * R, h, Math.cos(ang) * R);
     st.controls.target.set(0, .8 + k * 4.2, 0);
   });
@@ -959,7 +1105,7 @@ async function initBlueprint(el) {
     to = V[v]; from = { pos: st.camera.position.clone(), tgt: st.controls.target.clone() }; tw = reduced ? 1 : 0;
     if (reduced) { st.camera.position.copy(to.pos); st.controls.target.copy(to.tgt); }
     st.renderer.clippingPlanes = to.clip;
-    st.controls.autoRotate = v === 'persp' && !reduced;
+    st.controls.autoRotate = false; sway = v === 'persp' && !reduced && !touched;
     st.controls.minPolarAngle = v === 'plan' ? 0 : .25;
     const cap = document.querySelector('[data-bp-caption]');
     if (cap) cap.textContent = { persp: 'Phối cảnh tổng thể', plan: 'Mặt bằng tầng trệt, cắt ở cao độ 1,5 m', section: 'Mặt cắt dọc qua giữa nhà' }[v];
@@ -971,11 +1117,43 @@ async function initBlueprint(el) {
     st.camera.position.lerpVectors(from.pos, to.pos, e);
     st.controls.target.lerpVectors(from.tgt, to.tgt, e);
   });
+  st.controls.autoRotate = false;
+  let sway = !reduced, touched = false, swayT = 0;
+  st.controls.addEventListener('start', () => { touched = true; sway = false; });
+  const sph = new THREE.Spherical().setFromVector3(st.camera.position.clone().sub(st.controls.target));
+  st.ticks.push(dt => {
+    if (!sway || tw < 1) return;
+    swayT += dt;
+    sph.setFromVector3(st.camera.position.clone().sub(st.controls.target));
+    sph.theta = .55 + Math.sin(swayT * .25) * .6;
+    st.camera.position.setFromSpherical(sph).add(st.controls.target);
+  });
   const vbtns = document.querySelectorAll('[data-bp-view]');
   vbtns.forEach(b => b.addEventListener('click', () => {
     vbtns.forEach(x => { x.setAttribute('aria-pressed', x === b); x.classList.toggle('active', x === b); });
     setView(b.dataset.bpView);
   }));
+
+  // Facade finish: changes the render coat in the "Vật liệu" view (and switches to it).
+  const FACADE = { trang: ['#efe9da'], kem: ['#e6d9bf'], xam: ['#a8a49b'], 'dat-nung': ['#c07a55'] };
+  const plasterMaps = {};
+  document.querySelectorAll('[data-bp-facade]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-bp-facade]').forEach(x => { x.classList.toggle('active', x === b); x.setAttribute('aria-pressed', x === b); });
+    const k = b.dataset.bpFacade;
+    M.plaster.map = plasterMaps[k] || (plasterMaps[k] = T.plaster(FACADE[k][0])); M.plaster.needsUpdate = true;
+    const real = document.querySelector('[data-bp-mode="real"]'); if (real && !real.classList.contains('active')) real.click();
+  }));
+  // Sun study: the hour of day moves the sun along its arc, so the shadows show how the house sits in the light.
+  const sun = document.querySelector('[data-bp-sun]'), sunOut = document.querySelector('[data-bp-sun-out]');
+  const setSun = h => {
+    const a = (h - 6) / 12 * Math.PI, up = Math.sin(a);
+    st.sun.position.set(Math.cos(a) * -18, Math.max(.6, up * 20), 9);
+    st.sun.intensity = .35 + up * 2.3;
+    st.sun.color.setHSL(.09, .55 - up * .35, .62 + up * .3);
+    st.hemi.intensity = .2 + up * .4;
+    if (sunOut) sunOut.textContent = String(Math.floor(h)).padStart(2, '0') + ':' + (h % 1 ? '30' : '00');
+  };
+  if (sun) { sun.addEventListener('input', () => setSun(+sun.value)); setSun(+sun.value); }
 
   if (house) {
     let pf = reduced ? 7 : 0, playing = false;
@@ -988,14 +1166,15 @@ async function initBlueprint(el) {
   st.ready();
 }
 
-/* ---------- Nội thất: living room with swappable finishes ---------- */
+/* ---------- Nội thất: interior configurator ---------- */
+// Space, floor, wall colour, battens, furniture wood, sofa fabric and light are all chosen by the visitor;
+// the summary of the choices can be sent with the contact form.
 async function initRoom(el) {
   const st = makeStage(el, { paper: true, cam: [6.2, 3.8, 7.2], target: [0, 1.1, -.6], auto: false, exposure: 1 });
   if (!st) return;
   st.controls.minAzimuthAngle = -.15; st.controls.maxAzimuthAngle = 1.25;
   const env = st.scene.environment;
   const M = makeMats();
-  // Real photographs (img/materials/, credited in the page footer) replace the drawn textures where they load.
   const tl = new THREE.TextureLoader();
   const photo = (url, rep, mat) => tl.load(url, t => {
     t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep, rep); t.anisotropy = 8;
@@ -1004,45 +1183,82 @@ async function initRoom(el) {
   photo('img/materials/da-marble.jpg', 2, M.marbleFloor);
   const R = buildRoom(M);
   const g = R.group; st.scene.add(g);
-  let glb = null;
-  if (MODELS.room) { try { glb = fitTo(await loadGLB(MODELS.room), 7); g.add(glb); } catch (e) { console.warn('GLB lỗi', e); } }
-  // A realistic room GLB keeps the finish buttons working when its materials are named "Floor" and "Wall".
-  const floors = [R.floor], walls = [...R.walls];
-  if (glb) {
-    g.children.forEach(o => { if (o !== glb && o !== R.bulb) o.visible = false; });
-    glb.traverse(o => {
-      if (!o.isMesh || !o.material || !o.material.name) return;
-      if (/floor/i.test(o.material.name)) floors.push(o);
-      if (/wall/i.test(o.material.name)) walls.push(o);
-    });
-  }
   const { slats, art, shade, bulb } = R;
 
+  // Floors
+  const terr = M.terrazzo.clone(); terr.map = T.terrazzo(); terr.map.repeat.set(3, 2.5);
+  const tiles = M.encaustic.clone(); tiles.map = T.encaustic(); tiles.map.repeat.set(30, 25);
+  const FLOORS = { go: M.floorWood, da: M.marbleFloor, 'xi-mang': M.microcement, terrazzo: terr, 'gach-bong': tiles };
+  // Walls
+  const wallMat = {};
+  const WALLS = { kem: '#ece5d2', trang: '#f4f2ec', reu: '#4f6a57', 'dat-nung': '#b06a4a', xam: '#9a968e' };
+  const wall = k => wallMat[k] || (wallMat[k] = new THREE.MeshStandardMaterial({ map: T.plaster(WALLS[k]), roughness: .95 }));
+  // Furniture wood: oak, walnut or white lacquer, applied to the shared materials so every piece follows.
+  const woods = { oakMap: M.oak.map, walnutMap: M.walnut.map };
+  const WOOD = {
+    soi: () => { M.oak.map = woods.oakMap; M.walnut.map = woods.walnutMap; M.oak.color.set('#ffffff'); M.walnut.color.set('#ffffff'); },
+    'oc-cho': () => { M.oak.map = woods.walnutMap; M.walnut.map = woods.walnutMap; M.oak.color.set('#ffffff'); M.walnut.color.set('#cfc6bd'); },
+    trang: () => { M.oak.map = null; M.walnut.map = null; M.oak.color.set('#ebe8e1'); M.walnut.color.set('#d9d5cc'); }
+  };
+  const FABRIC = { be: '#bdb3a0', reu: '#5c7462', 'dat-nung': '#a6654a', than: '#45433f' };
+
+  // Furniture sets for three kinds of room; living is the set already in the room.
+  const sets = { 'phong-khach': new THREE.Group(), 'phong-ngu': new THREE.Group(), 'lam-viec': new THREE.Group() };
+  R.living.forEach(o => { g.remove(o); sets['phong-khach'].add(o); });
+  const bed = FURNITURE.giuong(M); bed.position.set(.3, 0, -1.3); sets['phong-ngu'].add(bed);
+  const ward = FURNITURE['tu-ao'](M); ward.position.set(-2.55, 0, .7); ward.rotation.y = Math.PI / 2; sets['phong-ngu'].add(ward);
+  sets['phong-ngu'].add(block(2.6, .02, 1.9, M.rug, .3, 0, .4));
+  const desk = FURNITURE['ban-lam-viec'](M); desk.position.set(.4, 0, -1.6); sets['lam-viec'].add(desk);
+  const shelf = FURNITURE['ke-sach'](M); shelf.position.set(-2.6, 0, -.4); shelf.rotation.y = Math.PI / 2; sets['lam-viec'].add(shelf);
+  const reading = new THREE.Group();
+  reading.add(mesh(new RoundedBoxGeometry(.8, .38, .8, 2, .08), M.fabric, 0, .38, 0), mesh(new RoundedBoxGeometry(.8, .6, .14, 2, .06), M.fabric, 0, .8, -.36));
+  reading.position.set(2.1, 0, .5); reading.rotation.y = -1.1; sets['lam-viec'].add(reading);
+  Object.values(sets).forEach(x => g.add(x));
+  let pop = null;
+
   const set = {
-    floor: v => { floors.forEach(o => { o.material = { go: M.floorWood, da: M.marbleFloor, 'xi-mang': M.microcement }[v]; }); },
-    wall: v => {
-      const mat = v === 'reu' ? M.paintMoss : M.paintCream;
-      walls.forEach(o => { o.material = mat; });
-      slats.visible = v === 'lam' && !glb;
-      art.material = v === 'reu' ? M.paintCream : M.paintMoss;
-    },
+    space: v => { Object.entries(sets).forEach(([k, grp]) => { grp.visible = k === v; }); pop = { grp: sets[v], t: 0 }; },
+    floor: v => { R.floor.material = FLOORS[v]; },
+    wall: v => { const m = wall(v); R.walls.forEach(o => { o.material = m; }); art.material = v === 'reu' ? M.paintCream : M.paintMoss; },
+    lam: v => { slats.visible = v === 'co'; },
+    wood: v => { WOOD[v](); [M.oak, M.walnut].forEach(m => { m.needsUpdate = true; }); },
+    fabric: v => { M.fabric.color.set(FABRIC[v]); },
     light: v => {
-      const night = v === 'toi';
-      st.sun.intensity = night ? .15 : 2.6;
-      st.sun.position.set(night ? -8 : -9, night ? 4 : 9, night ? 1 : 2);
-      st.hemi.intensity = night ? .06 : .55;
-      st.scene.environment = night ? null : env;
-      st.renderer.toneMappingExposure = night ? 1.25 : 1;
-      bulb.intensity = night ? 14 : 0;
-      shade.material.emissive = new THREE.Color(night ? '#5a3d14' : '#000000');
+      const L = { ngay: [2.6, [-9, 9, 2], '#fff3df', .55, 0, 1], chieu: [2.1, [-10, 3.2, 5], '#ffb070', .32, 5, 1.08], toi: [.12, [-8, 4, 1], '#9bb0ff', .06, 14, 1.25] }[v];
+      st.sun.intensity = L[0]; st.sun.position.set(...L[1]); st.sun.color.set(L[2]); st.hemi.intensity = L[3];
+      bulb.intensity = L[4]; st.renderer.toneMappingExposure = L[5];
+      st.scene.environment = v === 'toi' ? null : env;
+      shade.material.emissive = new THREE.Color(v === 'ngay' ? '#000000' : '#5a3d14');
     }
   };
-  document.querySelectorAll('[data-room]').forEach(b => b.addEventListener('click', () => {
+  st.ticks.push(dt => {
+    if (!pop) return;
+    pop.t = Math.min(1, pop.t + dt * 2.2);
+    const e = easeOut(pop.t); pop.grp.position.y = (1 - e) * .5; pop.grp.scale.setScalar(.92 + .08 * e);
+    if (pop.t >= 1) pop = null;
+  });
+
+  const summary = document.querySelector('[data-room-summary]');
+  const order = ['space', 'floor', 'wall', 'lam', 'wood', 'fabric', 'light'];
+  const describe = () => order.map(k => {
+    const b = document.querySelector(`[data-room="${k}"].active`);
+    return b ? (b.getAttribute('title') || b.textContent.trim()) : '';
+  }).filter(Boolean);
+  const choose = b => {
     const k = b.dataset.room;
     document.querySelectorAll(`[data-room="${k}"]`).forEach(x => { x.setAttribute('aria-pressed', x === b); x.classList.toggle('active', x === b); });
     set[k](b.dataset.v);
-  }));
-  set.light('ngay');
+    if (summary) summary.innerHTML = '<b>Cấu hình đang xem:</b> ' + describe().join(', ');
+  };
+  document.querySelectorAll('[data-room]').forEach(b => b.addEventListener('click', () => choose(b)));
+  // Start from whatever the page marks as active in each group.
+  order.forEach(k => { const b = document.querySelector(`[data-room="${k}"].active`) || document.querySelector(`[data-room="${k}"]`); if (b) choose(b); });
+  const send = document.querySelector('[data-room-send]');
+  if (send) send.addEventListener('click', () => {
+    const msg = document.getElementById('contactMessage'), svc = document.getElementById('contactService');
+    if (msg) msg.value = 'Tôi muốn tư vấn nội thất theo cấu hình: ' + describe().join(', ') + '.';
+    if (svc) [...svc.options].forEach((o, i) => { if (/nội thất/i.test(o.text)) svc.selectedIndex = i; });
+  });
   st.ready();
 }
 
@@ -1083,27 +1299,147 @@ function buildRoom(M) {
   const artFrame = block(1.06, .76, .02, M.oak, -.9, 1.47, -2.415);
   [floor, back, ...leftParts, glassPane, ...frame, slats, rug, sofa, table, chair, sideboard, cord, shade, pot, artFrame, art].forEach(o => g.add(o));
   g.add(bulb);
-  return { group: g, floor, walls: [back, ...leftParts], slats, art, shade, bulb };
+  return { group: g, floor, walls: [back, ...leftParts], slats, art, shade, bulb, living: [rug, sofa, table, chair, sideboard] };
+}
+
+
+/* ---------- Home: one camera from the empty plot to the finished living room ---------- */
+// Scroll through the six steps drives everything: survey stakes, the house drawn as blueprint lines, piles and frame
+// rising, finishes and lights, then the camera flies through the front glass into the furnished ground floor.
+const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+async function initJourney(el) {
+  const section = el.closest('.build');
+  const st = makeStage(el, { cam: [24, 30, 30], target: [0, 0, 0], orbit: false, auto: false, exposure: 1.05 });
+  if (!st) return;
+  const M = makeMats();
+  const house = buildHouse(M);
+  st.scene.add(house.group);
+  st.sun.position.set(10, 18, 12);
+  st.scene.background = null;
+
+  // Blueprint: edges of the permanent structure, one merged line set per phase so each draws in on its own.
+  const lineMat = k => new THREE.LineBasicMaterial({ color: '#9cc3ff', transparent: true, opacity: 0, depthWrite: false });
+  const wire = [1, 2, 3, 4, 5].map(ph => {
+    const geos = [];
+    house.parts.forEach(pt => {
+      const o = pt.obj;
+      if (pt.phase !== ph || pt.until !== undefined || !o.isMesh || o.material === M.warm) return;
+      o.updateMatrix();
+      const m = o.matrix.clone();
+      m.setPosition(o.position.x, o.userData.base, o.position.z);
+      const e = new THREE.EdgesGeometry(o.geometry, 25); e.applyMatrix4(m); geos.push(e);
+    });
+    const ls = new THREE.LineSegments(mergeGeometries(geos), lineMat());
+    ls.renderOrder = 2; st.scene.add(ls); return ls;
+  });
+  // Survey: a drawing grid on the ground and stakes at each column axis.
+  const grid = new THREE.GridHelper(36, 72, '#5d7fb3', '#3a4f70');
+  grid.material.transparent = true; grid.material.opacity = 0; grid.position.y = .02; st.scene.add(grid);
+  const stakes = new THREE.Group();
+  XS.forEach(x => ZS.forEach(z => { const s = mesh(new THREE.CylinderGeometry(.04, .04, .7, 8), M.pressRed, x, .35, z); stakes.add(s); }));
+  const outline = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints([[-W / 2, D / 2], [W / 2, D / 2], [W / 2, -D / 2], [-W / 2, -D / 2]].map(([x, z]) => new THREE.Vector3(x, .05, z))), new THREE.LineBasicMaterial({ color: '#e9a47f', transparent: true }));
+  stakes.add(outline); st.scene.add(stakes);
+
+  // Furnished ground floor, seen at the end of the flight.
+  const room = new THREE.Group(), y0 = L0;
+  const sofa = FURNITURE.sofa(M); sofa.position.set(1.7, y0, -.9); room.add(sofa);
+  const tbl = FURNITURE['ban-tra'](M); tbl.position.set(1.7, y0, .35); room.add(tbl);
+  room.add(block(W - .7, .02, D - .7, M.floorWood, 0, y0, 0));
+  room.add(block(3.2, .02, 2.4, M.rug, 1.7, y0 + .02, .1));
+  const dining = FURNITURE['ban-an'](M); dining.position.set(-1.8, y0, -3.2); room.add(dining);
+  const shelf = FURNITURE['tu-ao'](M); shelf.position.set(3.25, y0, -2.6); shelf.rotation.y = -Math.PI / 2; room.add(shelf);
+  const plant = new THREE.Group();
+  plant.add(mesh(new THREE.CylinderGeometry(.2, .16, .45, 24), M.concrete, 0, .225, 0));
+  [[0, .9, 0, .38], [.15, 1.2, .05, .28], [-.12, 1.15, -.06, .3]].forEach(([x, y, z, r]) => plant.add(mesh(new THREE.IcosahedronGeometry(r, 1), M.leaf, x, y, z)));
+  plant.position.set(3.1, y0, 1.2); room.add(plant);
+  const shade = mesh(new THREE.ConeGeometry(.3, .28, 40, 1, true), M.brass, 1.7, y0 + 2.2, .35); room.add(shade);
+  const lamp = new THREE.PointLight('#ffcf8a', 0, 9, 1.4); lamp.position.set(1.7, y0 + 2.0, .35);
+  // The lamp stays in the scene at all times (intensity 0 until inside): a light that comes and goes changes the
+  // light count, and every material in the scene is then recompiled mid-scroll.
+  st.scene.add(lamp);
+  room.add(block(1.1, .75, .03, M.paintMoss, -1.8, y0 + 1.5, -D / 2 + .25));
+  room.visible = false; st.scene.add(room);
+  const glows = house.parts.filter(pt => pt.obj.material === M.warm).map(pt => pt.obj);
+
+  // Camera path: [step, position, target, field of view].
+  const K = [
+    [0, [26, 34, 32], [0, 0, 0], 32], [1, [22, 26, 28], [0, 1, 0], 32], [2.2, [24, 19, 30], [0, 5, 0], 32],
+    [3.4, [22, 14, 28], [0, 4, 0], 32], [4.6, [24, 16, 28], [0, 5, 0], 32], [5.05, [22, 12, 27], [0, 5, 0], 32],
+    [5.45, [1.6, 3.4, 21], [.8, 2.6, 4], 34], [5.75, [.9, 1.8, 7.5], [.9, 1.6, 0], 46], [6, [.6, 1.7, 3.4], [1.5, 1.3, -1.4], 58]
+  ];
+  const v = new THREE.Vector3(), tg = new THREE.Vector3(), pos = new THREE.Vector3(...K[0][1]), look = new THREE.Vector3(...K[0][2]);
+  const sample = t => {
+    let i = 0; while (i < K.length - 2 && t > K[i + 1][0]) i++;
+    const [a, pa, ta, fa] = K[i], [b, pb, tb, fb] = K[i + 1];
+    const u = smooth(a, b, t);
+    v.set(...pa).lerp(tg.set(...pb), u);
+    const p = v.clone();
+    v.set(...ta).lerp(tg.set(...tb), u);
+    return [p, v.clone(), fa + (fb - fa) * u];
+  };
+
+  // Compile and draw everything once, all of it visible, before the visitor reaches this section:
+  // otherwise the furniture's first appearance compiled its shaders mid-scroll and froze a frame for most of a second.
+  house.parts.forEach(pt => { pt.obj.visible = true; }); room.visible = true; wire.forEach(ls => { ls.visible = true; });
+  try { if (st.renderer.compileAsync) await st.renderer.compileAsync(st.scene, st.camera); } catch (e) {}
+  // Draw one frame from every point on the camera path, so the driver has seen each view before the visitor does.
+  for (const [, cp, ct, fov] of K) {
+    st.camera.position.set(...cp); st.camera.fov = fov; st.camera.updateProjectionMatrix(); st.camera.lookAt(...ct);
+    st.renderer.shadowMap.needsUpdate = true; st.renderer.render(st.scene, st.camera);
+    await new Promise(r => setTimeout(r, 30));
+  }
+
+  let target = 0, t = 0;
+  const read = () => {
+    const r = section.getBoundingClientRect();
+    target = clamp(-r.top / (r.height - innerHeight), 0, 1) * 6;
+  };
+  addEventListener('scroll', read, { passive: true });
+  addEventListener('resize', read);
+  read(); t = target;
+
+  st.ticks.push(dt => {
+    t += (target - t) * Math.min(1, dt * (reduced ? 60 : 4));
+    // Build: nothing until the contract step, piles at step 4, structure through step 5, finishes and lights in step 6.
+    const pf = t < 3 ? 0 : t < 4 ? (t - 3) * 1.2 : t < 5 ? 1.2 + (t - 4) * 3.8 : Math.min(7.2, 5 + (t - 5) * 5.5);
+    applyParts(house.parts, pf);
+    const show = smooth(1, 1.5, t) * (1 - smooth(4.4, 5.1, t));
+    wire.forEach((ls, i) => { const d = smooth(1.1 + i * .22, 1.5 + i * .22, t); ls.material.opacity = .9 * show * d; ls.visible = ls.material.opacity > .01; ls.scale.y = Math.max(d, .001); });
+    grid.material.opacity = .45 * (1 - smooth(3, 3.6, t)); grid.visible = grid.material.opacity > .01;
+    const sv = smooth(0, .5, t) * (1 - smooth(3.2, 3.8, t)); stakes.visible = sv > .01; stakes.scale.setScalar(Math.max(sv, .001));
+    const inside = smooth(5.55, 5.85, t);
+    room.visible = inside > .01; room.scale.setScalar(1);
+    lamp.intensity = 6 * inside;
+    glows.forEach(g => { g.visible = g.visible && t < 5.38; });
+    const [p, l, f] = sample(t);
+    pos.lerp(p, Math.min(1, dt * 6)); look.lerp(l, Math.min(1, dt * 6));
+    st.camera.position.copy(pos); st.controls.target.copy(look);
+    if (Math.abs(st.camera.fov - f) > .01) { st.camera.fov = f; st.camera.updateProjectionMatrix(); }
+  });
+  st.ready();
 }
 
 /* Builders exposed for export-3d.html, which turns the procedural models into GLB files for the 3D tool. */
-export { makeMats, SAMPLES, buildHouse, applyParts, buildRoom, fitTo };
+export { makeMats, SAMPLES, FURNITURE, buildHouse, applyParts, buildRoom, fitTo };
 
 /* ---------- Boot ---------- */
-const boot = { materials: initMaterials, furniture: initFurniture, details: initDetails, build: initBuild, blueprint: initBlueprint, room: initRoom };
+const boot = { journey: initJourney, materials: initMaterials, furniture: initFurniture, details: initDetails, build: initBuild, blueprint: initBlueprint, room: initRoom };
 // Each stage is built only when it comes near the screen, so shader compiling never lands on a frame the visitor is watching.
 const built = new Set();
 const build = el => {
   if (built.has(el)) return;
   built.add(el); lazy.unobserve(el);
   const f = boot[el.dataset['3d']];
+  const lbl = el.querySelector('.stage-status span'); if (lbl) lbl.textContent = 'Đang dựng mô hình';
   if (f) f(el).catch(err => { console.error(err); fail(el, 'Không dựng được mô hình 3D trên thiết bị này.'); });
 };
 const lazy = new IntersectionObserver(entries => entries.forEach(e => e.isIntersecting && build(e.target)), { rootMargin: '800px 0px' });
 const stages = [...document.querySelectorAll('[data-3d]')];
 stages.forEach(el => lazy.observe(el));
-// Pages without the intro screen build every stage at once, while the visitor is still on the first screen.
-if (!document.getElementById('loader')) stages.forEach(build);
+// Every stage is built as soon as this module arrives, while the visitor is still on the first screen
+// (on the home page the module itself is only fetched after the intro, at an idle moment).
+// Building later meant shader compiles landing in the middle of a scroll.
+stages.forEach((el, i) => setTimeout(() => whenQuiet(() => build(el)), i * 120));
 // Stages further down are built ahead of time, but only in a truly idle moment (no scrolling or animation running).
 if ('requestIdleCallback' in window) {
   const next = () => requestIdleCallback(d => {

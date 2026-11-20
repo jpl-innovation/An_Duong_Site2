@@ -4,13 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Thi công nội thất | ADDC · Kiến Trúc An Dương</title>
-  <meta name="description" content="Công ty TNHH Kiến Trúc An Dương (ADDC): tư vấn thiết kế kiến trúc, thi công công trình và thi công nội thất cho nhà phố, biệt thự tại TP.HCM và khu vực phía Nam từ năm 2015." />
+  <meta name="description" content="Thiết kế và thi công nội thất căn hộ, nhà phố, biệt thự, văn phòng, showroom. Phối thử vật liệu trên mô hình 3D. Thiết kế từ 300.000 đ/m²." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 fill=%27%23111110%27/%3E%3Ctext x=%2716%27 y=%2722%27 font-family=%27Arial%27 font-weight=%27700%27 font-size=%2716%27 fill=%27%23ECE9E3%27 text-anchor=%27middle%27%3EA%3C/text%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css?v=20261119v" />
-  <script>document.documentElement.classList.add('js');</script>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500&family=Be+Vietnam+Pro:wght@400;500&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600&family=Fraunces:opsz,wght@9..144,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/v2.css?v=20261121b" />
+  <script>document.documentElement.classList.add('js');try{var t=new URLSearchParams(location.search).get('theme')||localStorage.getItem('addc-theme');if(t==='moss')document.documentElement.setAttribute('data-theme','moss');if(sessionStorage.getItem('addc-curtain')){sessionStorage.removeItem('addc-curtain');document.documentElement.classList.add('arriving');}else if(!sessionStorage.getItem('addc-seen')&&!/(\/|index\.html)$/.test(location.pathname)&&!matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.classList.add('arriving');sessionStorage.setItem('addc-seen','1');}catch(e){}</script>
   <script type="importmap">
   { "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -35,130 +35,148 @@
   }
   </script>
 </head>
-<body>
+<body class="v2">
   <a class="skip" href="#top">Bỏ qua, đến nội dung</a>
 
-  <div class="grain" aria-hidden="true"></div>
-
-  <!-- Header -->
   <header class="header" id="header">
     <a href="index.html" class="logo" aria-label="ADDC, Kiến Trúc An Dương, trang chủ">
-      <img class="logo-img" src="img/logo-white.png" alt="ADDC An Dương Design + Construction" width="1200" height="335" />
+      <img class="logo-img logo-light" src="img/logo-white.png" alt="ADDC An Dương Design + Construction" width="1200" height="335" decoding="async" />
+      <img class="logo-img logo-dark" src="img/logo-ink.png" alt="" width="1200" height="335" decoding="async" />
     </a>
     <nav class="header-nav" aria-label="Điều hướng chính">
       <a href="gioi-thieu.html">Giới thiệu</a>
       <a href="kien-truc.html">Kiến trúc</a>
       <a href="thi-cong.html">Thi công</a>
       <a href="noi-that.html" aria-current="page">Nội thất</a>
-      <a href="index.html#work">Dự án</a>
+      <a href="du-an.html">Dự án</a>
       <a href="#pricing">Bảng giá</a>
+      <a href="#contact">Liên hệ</a>
     </nav>
     <div class="header-right">
-      <span class="header-time" id="clock">HCMC 00:00</span>
-      <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="menu">
-        <span class="menu-btn-text">Menu</span>
-        <span class="menu-btn-lines"><i></i><i></i></span>
-      </button>
+      <a class="header-phone" href="tel:0943140310">0943 14 03 10</a>
+      <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="menu"><span class="menu-btn-text">Menu</span><span class="menu-btn-lines"><i></i><i></i></span></button>
     </div>
   </header>
 
-  <!-- Fullscreen menu -->
   <div class="menu" id="menu" aria-hidden="true" data-lenis-prevent>
-    <div class="menu-inner">
-      <nav class="menu-links" aria-label="Menu">
-        <a href="index.html"><sup>01</sup><span>Trang chủ</span></a>
-        <a href="gioi-thieu.html"><sup>02</sup><span>Giới thiệu</span></a>
-        <a href="kien-truc.html"><sup>03</sup><span>Thiết kế kiến trúc</span></a>
-        <a href="thi-cong.html"><sup>04</sup><span>Thi công công trình</span></a>
-        <a href="noi-that.html"><sup>05</sup><span>Thi công nội thất</span></a>
-        <a href="index.html#work"><sup>06</sup><span>Dự án</span></a>
-        <a href="#contact"><sup>07</sup><span>Liên hệ</span></a>
-      </nav>
-      <div class="menu-aside">
-        <div><p class="label">Văn phòng</p><p>69/29 Đặng Thùy Trâm, P.13<br />Q. Bình Thạnh, TP.HCM</p></div>
-        <div><p class="label">Liên hệ</p><p><a href="tel:0943140310">0943 14 03 10</a><br /><a href="mailto:ad@addc.vn">ad@addc.vn</a></p></div>
-        <div><p class="label">Giờ làm việc</p><p>Thứ 2 đến Thứ 7<br />08:00 đến 17:00</p></div>
-      </div>
+    <nav class="menu-links" aria-label="Menu">
+      <a href="index.html">Trang chủ</a>
+      <a href="gioi-thieu.html">Giới thiệu</a>
+      <a href="kien-truc.html">Thiết kế kiến trúc</a>
+      <a href="thi-cong.html">Thi công công trình</a>
+      <a href="noi-that.html">Thi công nội thất</a>
+      <a href="du-an.html">Dự án</a>
+      <a href="#contact">Liên hệ</a>
+    </nav>
+    <div class="menu-aside">
+      <div><b>Văn phòng</b>69/29 Đặng Thùy Trâm, P.13, Q. Bình Thạnh, TP.HCM</div>
+      <div><b>Hotline</b><a href="tel:0943140310">0943 14 03 10</a><br /><a href="mailto:ad@addc.vn">ad@addc.vn</a></div>
+      <div><b>Giờ làm việc</b>Thứ 2 đến Thứ 7, 08:00 đến 17:00</div>
     </div>
   </div>
 
-    <main id="top">
-    <section class="hero">
-      <div class="hero-meta"><span>( Lĩnh vực 03 / 03 )</span><span>Thi công nội thất</span><span>Từ 300.000 đ/m²</span></div>
-      <h1 class="hero-title">
-        <span class="line"><span class="word">Nội thất</span></span>
-        <span class="line indent"><span class="word"><em>đồng bộ</em></span></span>
-        <span class="line right"><span class="word">kiến trúc</span></span>
-      </h1>
-      <div class="hero-bottom"><p class="hero-lead reveal">ADDC thiết kế và thi công nội thất cho căn hộ, nhà phố, biệt thự, văn phòng và showroom: bố trí 2D, phối cảnh 3D từng phòng và đồ gỗ theo thiết kế.</p><a href="#pricing" class="scroll-cue"><span>Bảng giá</span><span class="scroll-cue-line"></span></a></div>
-      <div class="hero-media is-stage" id="heroMedia">
-        <div class="stage" data-3d="room"><div class="stage-status">Đang tải mô hình 3D</div></div>
-        <div class="stage-ctl">
-          <div class="stage-ctl-group" role="group" aria-label="Sàn"><button class="filter active" data-room="floor" data-v="go">Sàn gỗ</button><button class="filter" data-room="floor" data-v="da">Sàn đá</button><button class="filter" data-room="floor" data-v="xi-mang">Xi măng</button></div>
-          <div class="stage-ctl-group" role="group" aria-label="Tường"><button class="filter active" data-room="wall" data-v="kem">Tường kem</button><button class="filter" data-room="wall" data-v="reu">Xanh rêu</button><button class="filter" data-room="wall" data-v="lam">Lam gỗ</button></div>
-          <div class="stage-ctl-group" role="group" aria-label="Ánh sáng"><button class="filter active" data-room="light" data-v="ngay">Ban ngày</button><button class="filter" data-room="light" data-v="toi">Buổi tối</button></div>
-        </div>
-        <div class="hero-media-caption"><span>Phòng khách</span><span>Mô hình minh họa, chọn vật liệu</span></div>
+  <main id="top">
+
+    <section class="studio" aria-label="Thiết kế nội thất" style="border-top:70px solid var(--ink)">
+      <div class="stage" data-3d="room"><div class="stage-status">Đang tải mô hình 3D</div><span class="stage-cap">Mô hình minh họa, kéo để xoay</span></div>
+      <div class="studio-panel">
+        <span class="meta">Thi công nội thất</span>
+        <h1 class="h-l">Phối thử căn phòng của bạn</h1>
+        <div class="opt"><span class="opt-label">Không gian</span><div class="opt-row"><button class="active" data-room="space" data-v="phong-khach">Phòng khách</button><button data-room="space" data-v="phong-ngu">Phòng ngủ</button><button data-room="space" data-v="lam-viec">Góc làm việc</button></div></div>
+        <div class="opt"><span class="opt-label">Sàn</span><div class="opt-row"><button class="active" data-room="floor" data-v="go">Gỗ sồi</button><button data-room="floor" data-v="da">Đá marble</button><button data-room="floor" data-v="xi-mang">Xi măng mài</button><button data-room="floor" data-v="terrazzo">Terrazzo</button><button data-room="floor" data-v="gach-bong">Gạch bông</button></div></div>
+        <div class="opt"><span class="opt-label">Màu tường</span><div class="swatches"><button class="active" data-room="wall" data-v="kem" title="Tường kem" style="background:#ece5d2"></button><button data-room="wall" data-v="trang" title="Tường trắng" style="background:#f4f2ec"></button><button data-room="wall" data-v="reu" title="Tường xanh rêu" style="background:#4f6a57"></button><button data-room="wall" data-v="dat-nung" title="Tường đất nung" style="background:#b06a4a"></button><button data-room="wall" data-v="xam" title="Tường xám đá" style="background:#9a968e"></button></div></div>
+        <div class="opt"><span class="opt-label">Ốp lam gỗ</span><div class="opt-row"><button class="active" data-room="lam" data-v="khong">Không ốp lam</button><button data-room="lam" data-v="co">Ốp lam gỗ</button></div></div>
+        <div class="opt"><span class="opt-label">Gỗ đồ nội thất</span><div class="opt-row"><button class="active" data-room="wood" data-v="soi">Gỗ sồi</button><button data-room="wood" data-v="oc-cho">Óc chó</button><button data-room="wood" data-v="trang">Sơn trắng</button></div></div>
+        <div class="opt"><span class="opt-label">Vải bọc</span><div class="swatches"><button class="active" data-room="fabric" data-v="be" title="Vải be" style="background:#bdb3a0"></button><button data-room="fabric" data-v="reu" title="Vải xanh rêu" style="background:#5c7462"></button><button data-room="fabric" data-v="dat-nung" title="Vải đất nung" style="background:#a6654a"></button><button data-room="fabric" data-v="than" title="Vải xám than" style="background:#45433f"></button></div></div>
+        <div class="opt"><span class="opt-label">Ánh sáng</span><div class="opt-row"><button class="active" data-room="light" data-v="ngay">Ban ngày</button><button data-room="light" data-v="chieu">Chiều muộn</button><button data-room="light" data-v="toi">Buổi tối</button></div></div>
+        <p class="studio-summary" data-room-summary></p>
+        <a class="btn light" href="#contact" data-room-send>Gửi cấu hình này để tư vấn</a>
       </div>
     </section>
-    <section class="hscroll" id="hscroll">
-      <div class="hscroll-sticky">
-        <div class="hscroll-head"><span class="label">Hình ảnh</span><span class="label hscroll-progress"><span id="hProgress">01</span> / <span id="hTotal">01</span></span></div>
-        <div class="hscroll-track" id="hTrack" data-svc="noi-that">
-          <div class="hscroll-intro"><h2 class="display">Không gian<br /><em>và chất liệu</em></h2><p>Phương án nội thất và những chất liệu thường dùng trong một căn phòng. Ảnh vật liệu từ thư viện mở, nguồn ghi ở chân trang.</p></div>
-        </div>
+    <section class="sec">
+      <div class="sec-head"><h2 class="h-l rv">Nội thất từng không gian</h2><p class="lead rv">Thiết kế và thi công nội thất cho căn hộ, nhà phố, biệt thự, văn phòng và showroom; đồ rời và trang trí cùng đối tác AZ Decor.</p></div>
+      <div class="scope"><div class="rv" style="--d:0.0s"><h3>Phòng khách, phòng ăn</h3><ul><li>Sofa, bàn trà, kệ tivi</li><li>Bàn ăn, ghế ăn</li><li>Ốp tường, trần, đèn</li></ul></div><div class="rv" style="--d:0.1s"><h3>Bếp, phòng ngủ</h3><ul><li>Tủ bếp trên, dưới, đảo bếp</li><li>Giường, tủ áo, bàn trang điểm</li><li>Rèm, đèn đầu giường</li></ul></div><div class="rv" style="--d:0.2s"><h3>Văn phòng, showroom</h3><ul><li>Bàn làm việc, kệ, tủ hồ sơ</li><li>Quầy tiếp đón</li><li>Vách kính, ánh sáng</li></ul></div></div>
+    </section>
+
+    <section class="studio" aria-label="Đồ nội thất">
+      <div class="stage" data-3d="furniture"><div class="stage-status">Đang tải mô hình 3D</div><span class="stage-cap">Mô hình minh họa, kéo để xoay</span></div>
+      <div class="studio-panel">
+        <h2 class="h-m">Từng món đóng theo kích thước</h2>
+        <p class="lead">Đồ gỗ được thiết kế theo kích thước căn phòng và gia công theo bản vẽ chi tiết. Kích thước nêu là thông số tham khảo.</p>
+        <div class="opt-row" role="group" aria-label="Đồ nội thất"><button type="button" data-item="sofa" aria-pressed="false">Sofa</button><button type="button" data-item="ban-tra" aria-pressed="false">Bàn trà</button><button type="button" data-item="ban-an" aria-pressed="false">Bàn ăn</button><button type="button" data-item="ghe-an" aria-pressed="false">Ghế ăn</button><button type="button" data-item="tu-bep" aria-pressed="false">Tủ bếp</button><button type="button" data-item="giuong" aria-pressed="false">Giường ngủ</button><button type="button" data-item="tu-ao" aria-pressed="false">Tủ áo</button><button type="button" data-item="ban-lam-viec" aria-pressed="false">Bàn làm việc</button><button type="button" data-item="ke-sach" aria-pressed="false">Kệ sách</button></div>
+        <ul class="phase-mats" data-item-spec>
+          <li><span>Món đồ</span><small class="mat-name">Sofa phòng khách</small></li>
+          <li><span>Kích thước</span><small data-k="size"></small></li>
+          <li><span>Vật liệu</span><small data-k="mat"></small></li>
+        </ul>
       </div>
     </section>
-    <section class="section materials">
-      <div class="section-head"><span class="label">( 01 ) Đồ nội thất</span><span class="label">Mô hình 3D, kéo để xoay</span></div>
-      <div class="mat-grid">
-        <div><h2 class="display">Từng món<br /><em>theo</em> thiết kế.</h2><p class="mat-intro">Đồ nội thất được thiết kế theo kích thước căn phòng và gia công theo bản vẽ chi tiết. Kích thước nêu là thông số tham khảo.</p><div class="mat-list" role="group" aria-label="Đồ nội thất"><button type="button" data-item="sofa" aria-pressed="false"><span class="n">01</span><span class="t">Sofa</span><span class="p">Phòng khách</span></button><button type="button" data-item="ban-tra" aria-pressed="false"><span class="n">02</span><span class="t">Bàn trà</span><span class="p">Phòng khách</span></button><button type="button" data-item="ban-an" aria-pressed="false"><span class="n">03</span><span class="t">Bàn ăn</span><span class="p">Phòng ăn</span></button><button type="button" data-item="ghe-an" aria-pressed="false"><span class="n">04</span><span class="t">Ghế ăn</span><span class="p">Phòng ăn</span></button><button type="button" data-item="tu-bep" aria-pressed="false"><span class="n">05</span><span class="t">Tủ bếp</span><span class="p">Bếp</span></button><button type="button" data-item="giuong" aria-pressed="false"><span class="n">06</span><span class="t">Giường ngủ</span><span class="p">Phòng ngủ</span></button><button type="button" data-item="tu-ao" aria-pressed="false"><span class="n">07</span><span class="t">Tủ áo</span><span class="p">Phòng ngủ</span></button><button type="button" data-item="ban-lam-viec" aria-pressed="false"><span class="n">08</span><span class="t">Bàn làm việc</span><span class="p">Làm việc</span></button><button type="button" data-item="ke-sach" aria-pressed="false"><span class="n">09</span><span class="t">Kệ sách</span><span class="p">Làm việc</span></button></div></div>
-        <div><div class="stage dark" data-3d="furniture"><div class="stage-status">Đang tải mô hình 3D</div><span class="stage-cap">Mô hình minh họa</span></div><dl class="mat-spec" data-item-spec><div><dt>Món đồ</dt><dd class="mat-name">Sofa phòng khách</dd></div><div><dt>Kích thước tham khảo</dt><dd data-k="size"></dd></div><div><dt>Vật liệu thường dùng</dt><dd data-k="mat"></dd></div></dl></div>
+    <section class="build on-dark" aria-label="Từ mặt bằng đến ngày dọn vào">
+      <div class="build-media" aria-hidden="true">
+        <img src="img/fb/sunwah/08.jpg" alt="" class="on" loading="lazy" decoding="async" />
+        <img src="img/fb/sunwah/07.jpg" alt="" class="is-drawing" loading="lazy" decoding="async" />
+        <img src="img/fb/pvb/02.jpg" alt="" loading="lazy" decoding="async" />
+        <img src="img/fb/extra/02.jpg" alt="" loading="lazy" decoding="async" />
+        <img src="img/fb/agribank/04.jpg" alt="" loading="lazy" decoding="async" />
+        <img src="img/fb/psd/02.jpg" alt="" loading="lazy" decoding="async" />
+        <span class="build-count" id="buildCount">Bước 1 trên 6</span>
+      </div>
+      <div class="build-steps">
+        <div class="build-intro"><h2 class="h-l rv">Từ mặt bằng đến ngày dọn vào</h2><p class="lead rv">Sáu bước, phối cảnh từng phòng được duyệt trước khi gia công đồ gỗ.</p></div>
+        <div class="step" data-step="0"><span class="meta">Bước 1</span><h3 class="h-m">Khảo sát và đo đạc</h3><p>Đo đạc mặt bằng, ghi nhận hiện trạng và nhu cầu sử dụng.</p><img class="step-pic" src="img/fb/sunwah/08.jpg" alt="" loading="lazy" decoding="async" /></div>
+        <div class="step" data-step="1"><span class="meta">Bước 2</span><h3 class="h-m">Bố trí nội thất 2D</h3><p>Sắp xếp công năng, lối đi và kích thước đồ cho từng tầng.</p><img class="step-pic is-drawing" src="img/fb/sunwah/07.jpg" alt="" loading="lazy" decoding="async" /></div>
+        <div class="step" data-step="2"><span class="meta">Bước 3</span><h3 class="h-m">Phối cảnh 3D từng phòng</h3><p>Thống nhất phong cách, vật liệu và ánh sáng trước khi gia công.</p><img class="step-pic" src="img/fb/pvb/02.jpg" alt="" loading="lazy" decoding="async" /></div>
+        <div class="step" data-step="3"><span class="meta">Bước 4</span><h3 class="h-m">Bản vẽ chi tiết đồ gỗ</h3><p>Kích thước, vật liệu và phụ kiện cho từng món.</p><img class="step-pic" src="img/fb/extra/02.jpg" alt="" loading="lazy" decoding="async" /></div>
+        <div class="step" data-step="4"><span class="meta">Bước 5</span><h3 class="h-m">Gia công và lắp đặt</h3><p>Đồ gỗ được gia công theo bản vẽ và lắp đặt tại công trình, như ốp gỗ văn phòng Agribank.</p><img class="step-pic" src="img/fb/agribank/04.jpg" alt="" loading="lazy" decoding="async" /></div>
+        <div class="step" data-step="5"><span class="meta">Bước 6</span><h3 class="h-m">Nghiệm thu, bàn giao</h3><p>Kiểm tra từng hạng mục và bàn giao không gian hoàn thiện.</p><img class="step-pic" src="img/fb/psd/02.jpg" alt="" loading="lazy" decoding="async" /></div>
       </div>
     </section>
-    <section class="section"><div class="section-head"><span class="label">( 02 ) Phạm vi công việc</span></div><h2 class="display" style="margin-bottom:clamp(48px,7vw,96px)">Nội thất<br /><em>từng</em> không gian.</h2><div class="scope-grid"><div class="scope-col reveal"><span class="label">Phòng khách, phòng ăn</span><ul><li>Sofa, bàn trà, kệ tivi</li><li>Bàn ăn, ghế ăn</li><li>Ốp tường, trần, đèn</li></ul></div><div class="scope-col reveal"><span class="label">Bếp, phòng ngủ</span><ul><li>Tủ bếp trên, dưới, đảo bếp</li><li>Giường, tủ áo, bàn trang điểm</li><li>Rèm, đèn đầu giường</li></ul></div><div class="scope-col reveal"><span class="label">Văn phòng, showroom</span><ul><li>Bàn làm việc, kệ, tủ hồ sơ</li><li>Quầy tiếp đón</li><li>Vách kính, ánh sáng</li></ul></div></div></section>
-    <section class="section process"><div class="process-grid"><div class="process-sticky"><span class="label">( 03 ) Quy trình</span><h2 class="display">Từ mặt bằng<br /><em>đến ngày</em><br />dọn vào.</h2></div><ol class="process-list"><li class="reveal"><span>01</span><div><h3>Khảo sát và đo đạc</h3><p>Đo đạc mặt bằng, ghi nhận hiện trạng và nhu cầu sử dụng.</p></div></li><li class="reveal"><span>02</span><div><h3>Bố trí nội thất 2D</h3><p>Sắp xếp công năng, lối đi và kích thước đồ cho từng tầng.</p></div></li><li class="reveal"><span>03</span><div><h3>Phối cảnh 3D từng phòng</h3><p>Thống nhất phong cách, vật liệu và ánh sáng trước khi gia công.</p></div></li><li class="reveal"><span>04</span><div><h3>Bản vẽ chi tiết đồ gỗ</h3><p>Kích thước, vật liệu và phụ kiện cho từng món.</p></div></li><li class="reveal"><span>05</span><div><h3>Gia công và lắp đặt</h3><p>Đồ gỗ được gia công theo bản vẽ và lắp đặt tại công trình.</p></div></li><li class="reveal"><span>06</span><div><h3>Nghiệm thu, bàn giao</h3><p>Kiểm tra từng hạng mục và bàn giao không gian hoàn thiện.</p></div></li></ol></div></section>
-    <section class="section pricing" id="pricing">
-      <div class="section-head"><span class="label">( 04 ) Bảng giá tham khảo</span><span class="label">VNĐ / m² · Chưa gồm VAT 10% · Bảng giá 2021</span></div>
-      <div class="pricing-tabs" role="tablist"><button class="ptab active" role="tab" aria-selected="true" data-pricing="thiet-ke-noi-that">Thiết kế nội thất</button><button class="ptab" role="tab" aria-selected="false" data-pricing="thiet-ke-kien-truc">Thiết kế kiến trúc</button></div>
+
+    <section class="sec" id="pricing" aria-labelledby="priceTitle">
+      <div class="sec-head"><h2 class="h-l rv" id="priceTitle">Bảng giá tham khảo</h2><p class="lead rv">VNĐ trên m² sàn, chưa gồm VAT 10%. Bảng giá 2021 cho phần thiết kế; chi phí thi công nội thất tính theo hồ sơ và vật liệu được chọn.</p></div>
+      <div class="ptabs" role="tablist"><button class="ptab active" role="tab" aria-selected="true" data-pricing="thiet-ke-noi-that">Thiết kế nội thất</button><button class="ptab" role="tab" aria-selected="false" data-pricing="thiet-ke-kien-truc">Thiết kế kiến trúc</button></div>
       <div class="price-table" id="priceTable" data-key="thiet-ke-noi-that"></div>
       <div class="calc">
-        <div class="calc-left"><span class="label">Dự toán nhanh</span><h3 class="calc-title">Ước tính ngân sách<br /><em>cho công trình của bạn</em></h3>
+        <div><h3 class="h-m">Dự toán nhanh theo diện tích</h3>
           <div class="calc-fields">
             <label class="field"><span>Hạng mục</span><select id="calcService"><option value="thiet-ke-noi-that">Thiết kế nội thất</option><option value="thiet-ke-kien-truc">Thiết kế kiến trúc</option></select></label>
             <label class="field"><span>Loại công trình</span><select id="calcType"><option value="nha-pho">Nhà phố</option><option value="biet-thu" selected>Biệt thự</option><option value="biet-thu-cao-cap">Biệt thự cao cấp</option></select></label>
-            <label class="field field-range"><span>Diện tích sàn: <b id="calcAreaOut">350</b> m²</span><input type="range" id="calcArea" min="80" max="1500" step="10" value="350" /></label>
-          </div></div>
-        <div class="calc-right"><span class="label">Chi phí dự kiến</span><div class="calc-total" id="calcTotal" aria-live="polite">0</div><div class="calc-note" id="calcNote"></div><a href="#contact" class="btn-line" id="applyEstimate">Gửi yêu cầu báo giá <span>→</span></a></div>
+            <label class="field field-range"><span>Diện tích sàn: <b id="calcAreaOut">350</b> m²</span><input type="range" id="calcArea" min="100" max="1500" step="10" value="350" /></label>
+          </div>
+        </div>
+        <div><span class="label">Chi phí dự kiến</span><div class="calc-total" id="calcTotal" aria-live="polite">0</div><div class="calc-note" id="calcNote"></div><a href="#contact" class="btn-line" id="applyEstimate">Gửi yêu cầu báo giá</a></div>
       </div>
     </section>
-    <section class="section work" id="work">
-      <div class="section-head"><span class="label">( 05 ) Nội thất đã thiết kế</span><div class="filters" role="group" aria-label="Lọc dự án"><button class="filter active" data-filter="all">Tất cả <sup id="countAll"></sup></button></div></div>
-      <div class="index-head"><span>No.</span><span>Dự án</span><span>Địa điểm</span><span>Hạng mục</span><span>Loại</span></div>
-      <ul class="index-list" id="indexList" data-svc="noi-that"></ul>
+
+    <section class="sec paper" aria-labelledby="pjnoi-that">
+      <div class="sec-head"><h2 class="h-l rv" id="pjnoi-that">Nội thất ADDC đã thực hiện</h2><a class="link rv" href="du-an.html?dv=noi-that">Tất cả công trình</a></div>
+      <div class="pgrid" id="projGrid" data-svc="noi-that" data-limit="6"></div>
+      <div id="extraStrip" data-svc="noi-that"></div>
     </section>
-    <section class="section services"><div class="section-head"><span class="label">( 06 ) Câu hỏi thường gặp</span></div><div class="accordion"><div class="acc-item open"><button class="acc-head"><span class="acc-num">01</span><span class="acc-title" style="font-size:clamp(1.3rem,2.6vw,2.4rem)">Chi phí thi công nội thất được tính thế nào?</span><span class="acc-icon"></span></button><div class="acc-body"><div class="acc-content"><p>Theo hồ sơ thiết kế nội thất và vật liệu được chọn. Bảng giá cố định áp dụng cho phần thiết kế.</p></div></div></div><div class="acc-item"><button class="acc-head"><span class="acc-num">02</span><span class="acc-title" style="font-size:clamp(1.3rem,2.6vw,2.4rem)">Căn hộ dưới 100 m² có nhận thiết kế không?</span><span class="acc-icon"></span></button><div class="acc-body"><div class="acc-content"><p>Có. Bảng giá áp dụng từ 100 m² cho căn hộ, nhà phố; diện tích nhỏ hơn được báo giá riêng.</p></div></div></div><div class="acc-item"><button class="acc-head"><span class="acc-num">03</span><span class="acc-title" style="font-size:clamp(1.3rem,2.6vw,2.4rem)">Nhà do đơn vị khác thiết kế, ADDC có làm nội thất không?</span><span class="acc-icon"></span></button><div class="acc-body"><div class="acc-content"><p>Có. Ba lĩnh vực của ADDC nhận riêng từng phần.</p></div></div></div><div class="acc-item"><button class="acc-head"><span class="acc-num">04</span><span class="acc-title" style="font-size:clamp(1.3rem,2.6vw,2.4rem)">ADDC làm nội thất cho loại công trình nào?</span><span class="acc-icon"></span></button><div class="acc-body"><div class="acc-content"><p>Chung cư, nhà phố, biệt thự, văn phòng và showroom. ADDC nghiên cứu, phát triển sản phẩm nội thất và hợp tác cùng AZ Decor (Furniture &amp; Decoration) cho đồ rời và trang trí.</p></div></div></div></div></section>
-    <section class="next"><span class="label">Lĩnh vực tiếp theo</span><a class="next-title" href="kien-truc.html"><span class="line"><span class="word">Thiết kế <em>kiến trúc</em></span></span></a><div class="next-row"><p>Chưa có bản vẽ? ADDC bắt đầu từ phương án kiến trúc cho khu đất của bạn.</p><a class="btn-line" href="kien-truc.html">Xem chi tiết <span>→</span></a></div></section>
-    <!-- CONTACT -->
-    <section class="contact" id="contact">
-      <span class="label">( 07 ) Liên hệ</span>
-      <h2 class="contact-title">
-        <span class="line"><span class="word">Hãy cùng</span></span>
-        <span class="line"><span class="word"><em>xây dựng</em></span></span>
-      </h2>
-      <a href="mailto:ad@addc.vn" class="contact-mail">ad@addc.vn <span>↗</span></a>
 
-      <div class="contact-grid">
-        <div class="contact-info">
-          <div><span class="label">Hotline</span><a href="tel:0943140310">0943 14 03 10</a></div>
-          <div><span class="label">Văn phòng</span><p>69/29 Đặng Thùy Trâm, P.13<br />Q. Bình Thạnh, TP.HCM</p></div>
-          <div><span class="label">Trụ sở</span><p>137 Lê Quang Định, P.14<br />Q. Bình Thạnh, TP.HCM</p></div>
-          <div><span class="label">Giờ làm việc</span><p>Thứ 2 đến Thứ 7, 08:00 đến 17:00</p></div>
+    <section class="sec" aria-labelledby="faqTitle">
+      <div class="sec-head"><h2 class="h-l rv" id="faqTitle">Câu hỏi thường gặp</h2></div>
+      <div class="accordion"><div class="acc-item open"><button class="acc-head"><span class="acc-title">Chi phí thi công nội thất được tính thế nào?</span><span class="acc-icon"></span></button><div class="acc-body"><div class="acc-content"><p>Theo hồ sơ thiết kế nội thất và vật liệu được chọn. Bảng giá cố định áp dụng cho phần thiết kế.</p></div></div></div><div class="acc-item"><button class="acc-head"><span class="acc-title">Căn hộ dưới 100 m² có nhận thiết kế không?</span><span class="acc-icon"></span></button><div class="acc-body"><div class="acc-content"><p>Có. Bảng giá áp dụng từ 100 m² cho căn hộ, nhà phố; diện tích nhỏ hơn được báo giá riêng.</p></div></div></div><div class="acc-item"><button class="acc-head"><span class="acc-title">Nhà do đơn vị khác thiết kế, ADDC có làm nội thất không?</span><span class="acc-icon"></span></button><div class="acc-body"><div class="acc-content"><p>Có. ADDC nhận riêng từng hạng mục.</p></div></div></div><div class="acc-item"><button class="acc-head"><span class="acc-title">ADDC làm nội thất cho loại công trình nào?</span><span class="acc-icon"></span></button><div class="acc-body"><div class="acc-content"><p>Chung cư, nhà phố, biệt thự, văn phòng và showroom, ví dụ căn hộ Sunwah Pearl (2023), văn phòng PSD tại tòa nhà PetroVietnam (2022) và văn phòng Agribank (2023). ADDC nghiên cứu, phát triển sản phẩm nội thất và hợp tác cùng AZ Decor (Furniture &amp; Decoration) cho đồ rời và trang trí.</p></div></div></div><div class="acc-item"><button class="acc-head"><span class="acc-title">Làm nội thất căn hộ chung cư cần thủ tục gì?</span><span class="acc-icon"></span></button><div class="acc-body"><div class="acc-content"><p>Cần giấy chấp thuận thi công nội thất (fit-out) của ban quản lý tòa nhà trước khi khởi công. Ở căn hộ Sunwah Pearl, giấy chấp thuận có trước lễ động thổ ngày 28/09/2023.</p></div></div></div></div>
+    </section>
+
+    <a class="next" href="gioi-thieu.html"><span class="meta">Về công ty</span><span class="h-xl">Giới thiệu ADDC →</span></a>
+
+    <section class="sec on-dark" id="contact" aria-labelledby="contactTitle">
+      <div class="contact">
+        <div>
+          <h2 class="h-xl rv" id="contactTitle">Bắt đầu công trình của bạn</h2>
+          <p class="lead rv">Gửi nhu cầu, ADDC liên hệ lại trong giờ làm việc. Hoặc gọi trực tiếp hotline.</p>
+          <dl class="contact-lines">
+            <div><dt>Hotline</dt><dd><a href="tel:0943140310">0943 14 03 10</a></dd></div>
+            <div><dt>Zalo</dt><dd><a href="https://zalo.me/0943140310" target="_blank" rel="noopener">0943 14 03 10</a></dd></div>
+            <div><dt>Email</dt><dd><a href="mailto:ad@addc.vn">ad@addc.vn</a></dd></div>
+            <div><dt>Văn phòng</dt><dd>69/29 Đặng Thùy Trâm, P.13, Q. Bình Thạnh, TP.HCM</dd></div>
+            <div><dt>Giờ làm việc</dt><dd>Thứ 2 đến Thứ 7, 08:00 đến 17:00</dd></div>
+          </dl>
         </div>
-
-        <form class="contact-form" id="contactForm" novalidate>
-          <label class="field"><span>Họ và tên *</span><input type="text" id="contactName" required autocomplete="name" /></label>
-          <label class="field"><span>Số điện thoại *</span><input type="tel" id="contactPhone" required autocomplete="tel" /></label>
+        <form class="form" id="contactForm" novalidate>
+          <label class="field"><span>Họ và tên</span><input type="text" id="contactName" required autocomplete="name" /></label>
+          <label class="field"><span>Số điện thoại</span><input type="tel" id="contactPhone" required autocomplete="tel" /></label>
           <label class="field full"><span>Dịch vụ quan tâm</span>
             <select id="contactService">
               <option>Thiết kế kiến trúc</option>
@@ -169,7 +187,7 @@
             </select>
           </label>
           <label class="field full"><span>Nhu cầu chi tiết</span><textarea id="contactMessage" rows="3"></textarea></label>
-          <button type="submit" class="btn-solid">Gửi yêu cầu <span>→</span></button>
+          <button type="submit" class="btn light">Gửi yêu cầu</button>
           <p class="form-feedback" id="formFeedback" role="status"></p>
         </form>
       </div>
@@ -177,33 +195,26 @@
   </main>
 
   <footer class="footer">
-    <div class="footer-top">
-      <p>© 2015 · <span data-year></span> Công ty TNHH Kiến trúc An Dương</p>
-      <a href="gioi-thieu.html">Giới thiệu</a>
-      <a href="kien-truc.html">Thiết kế kiến trúc</a>
-      <a href="thi-cong.html">Thi công công trình</a>
-      <a href="noi-that.html">Thi công nội thất</a>
-      <p>MST 0313281253</p>
-      <a href="#top">Lên đầu trang ↑</a>
+    <div class="footer-grid">
+      <div><b>Công ty TNHH Kiến Trúc An Dương</b>Thiết kế kiến trúc, thi công công trình và thi công nội thất từ năm 2015.<br />Trụ sở: 137 Lê Quang Định, P.14, Q. Bình Thạnh, TP.HCM</div>
+      <div><b>Dịch vụ</b><a href="kien-truc.html">Thiết kế kiến trúc</a><a href="thi-cong.html">Thi công công trình</a><a href="noi-that.html">Thi công nội thất</a></div>
+      <div><b>Công ty</b><a href="gioi-thieu.html">Giới thiệu</a><a href="du-an.html">Công trình</a><a href="thi-cong.html#nhat-ky">Nhật ký công trường</a></div>
+      <div><b>Liên hệ</b><a href="tel:0943140310">0943 14 03 10</a><a href="mailto:ad@addc.vn">ad@addc.vn</a><a href="#contact">Gửi yêu cầu</a></div>
     </div>
-    <p class="credits">Ảnh vật liệu: “Untitled”, CC0, rawpixel · “White Carrara Marble”, James St. John, CC BY 2.0, Wikimedia Commons · “Rattan wall decors”, MaxixKatana, CC BY-SA 4.0, Wikimedia Commons · “Free brown fabric image”, CC0, rawpixel.</p>
-    <img class="footer-logo" src="img/logo-bone.png" alt="ADDC An Dương Design + Construction" width="1200" height="335" loading="lazy" />
+    <img class="footer-logo" src="img/logo-white.png" alt="ADDC An Dương Design + Construction" width="1200" height="335" loading="lazy" decoding="async" />
+    <div class="footer-base"><span>© 2015 đến <span data-year></span> Công ty TNHH Kiến Trúc An Dương, MST 0313281253</span><span><button type="button" data-theme-switch>Thử bảng màu xanh rêu</button> · <button type="button" data-cookie-settings>Cài đặt cookie</button></span></div>
   </footer>
 
-  <nav class="callbar" aria-label="Liên hệ nhanh">
-    <a href="tel:0943140310">Gọi ngay</a>
-    <a href="#contact">Báo giá</a>
-  </nav>
+  <nav class="callbar" aria-label="Liên hệ nhanh"><a href="tel:0943140310">Gọi ngay</a><a href="https://zalo.me/0943140310" target="_blank" rel="noopener">Zalo</a><a href="#contact">Báo giá</a></nav>
 
-  <!-- Project modal -->
   <div class="modal" id="modal" role="dialog" aria-modal="true" aria-hidden="true" data-lenis-prevent>
     <div class="modal-panel">
-      <button class="modal-close" id="modalClose" aria-label="Đóng">Đóng ✕</button>
+      <button class="modal-close" id="modalClose" aria-label="Đóng">Đóng</button>
       <div id="modalBody"></div>
     </div>
   </div>
 
-    <script>
+  <script>
     window.ADDC_FURNITURE = {
       'sofa': { name: 'Sofa phòng khách', size: 'Dài 2,0 đến 2,4 m, sâu 0,9 đến 1,0 m', mat: 'Khung gỗ, mút, vải hoặc da' },
       'ban-tra': { name: 'Bàn trà', size: 'Đường kính 0,8 đến 1,1 m, cao 0,4 m', mat: 'Gỗ óc chó, đá marble' },
@@ -216,10 +227,14 @@
       'ke-sach': { name: 'Kệ sách', size: '1,8 × 2,0 m, sâu 0,35 m', mat: 'Gỗ tự nhiên hoặc MDF veneer' }
     };
   </script>
-  <script defer src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
-  <script defer src="js/app.js?v=20261119v"></script>
+  <script defer src="js/lenis.min.js"></script>
+  <script defer src="js/app.js?v=20261121b"></script>
   <script type="module">
-    import('./js/scene3d.js?v=20261119v').catch(() => document.querySelectorAll('[data-3d]').forEach(s => { s.classList.add('failed'); const t = s.querySelector('.stage-status'); if (t) t.textContent = 'Không tải được mô hình 3D. Vui lòng kiểm tra kết nối mạng và tải lại trang.'; }));
+    import('./js/scene3d.js?v=20261121b').catch(() => document.querySelectorAll('[data-3d]').forEach(s => {
+      s.classList.add('failed');
+      const t = s.querySelector('.stage-status');
+      if (t) t.textContent = 'Không tải được mô hình 3D. Vui lòng kiểm tra kết nối mạng và tải lại trang.';
+    }));
   </script>
 </body>
 </html>
