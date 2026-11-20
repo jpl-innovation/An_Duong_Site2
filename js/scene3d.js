@@ -1,3 +1,6 @@
+import { createModelLoader } from './addc-loader.js';
+import { installStageOrbit } from './addc-orbit.js';
+import { assembleHouse, createPhasePlayer, mountedModel } from './addc-motion.js';
 /* ADDC 3D: procedural models, built from code so the site works today.
    When realistic GLB files are ready (see 3D-PROMPTS.md), put them in models/ and fill in MODELS below.
    An empty string keeps the procedural model. One WebGL renderer per page, paused while off-screen. */
@@ -9,16 +12,45 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 export const MODELS = {
-  'be-tong': '', thep: '', gach: '', da: '', go: '', 'gach-op': '', kinh: '', terrazzo: '',
-  // nội thất page, furniture viewer, e.g. sofa: 'models/noi-that-sofa.glb'
-  sofa: '', 'ban-tra': '', 'ban-an': '', 'ghe-an': '', 'tu-bep': '', giuong: '', 'tu-ao': '', 'ban-lam-viec': '', 'ke-sach': '',
-  house: '',                          // kiến trúc page, e.g. 'models/house.glb'
-  room: '',                           // nội thất page, e.g. 'models/room.glb'
-  phases: ['', '', '', '', '', '', ''] // thi công page, one cumulative model per phase, e.g. 'models/phase-0.glb'
+  "be-tong": "models/be-tong.glb",
+  "thep": "models/thep.glb",
+  "gach": "models/gach.glb",
+  "da": "models/da.glb",
+  "go": "models/go.glb",
+  "gach-op": "models/gach-op.glb",
+  "kinh": "models/kinh.glb",
+  "terrazzo": "models/terrazzo.glb",
+  "house": "models/house.glb",
+  "room": "models/room.glb",
+  "sofa": "models/noi-that-sofa.glb",
+  "ban-tra": "models/noi-that-ban-tra.glb",
+  "ban-an": "models/noi-that-ban-an.glb",
+  "ghe-an": "models/noi-that-ghe-an.glb",
+  "tu-bep": "models/noi-that-tu-bep.glb",
+  "giuong": "models/noi-that-giuong.glb",
+  "tu-ao": "models/noi-that-tu-ao.glb",
+  "ban-lam-viec": "models/noi-that-ban-lam-viec.glb",
+  "ke-sach": "models/noi-that-ke-sach.glb",
+  "phases": [
+    "models/phase-0.glb",
+    "models/phase-1.glb",
+    "models/phase-2.glb",
+    "models/phase-3.glb",
+    "models/phase-4.glb",
+    "models/phase-5.glb",
+    "models/phase-6.glb"
+  ],
+  "details": {
+    "coc-mong": "models/chi-tiet-coc-mong.glb",
+    "cot": "models/chi-tiet-cot.glb",
+    "dam-san": "models/chi-tiet-dam-san.glb",
+    "tuong": "models/chi-tiet-tuong.glb",
+    "chong-tham": "models/chi-tiet-chong-tham.glb"
+  },
+  "extras": "models/addc-extras.glb"
 };
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const finePointer = matchMedia('(pointer: fine)').matches;
 const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
 const easeOut = t => 1 - Math.pow(1 - t, 3);
 
@@ -255,7 +287,7 @@ function fitTo(obj, size) {
   return obj;
 }
 const loader = new GLTFLoader();
-const loadGLB = url => new Promise((res, rej) => loader.load(url, g => res(g.scene), undefined, rej));
+const { load: loadGLB, prioritize: prioritizeModel } = createModelLoader(loader);
 
 /* ---------- Stage: renderer, camera, light, render-on-visible ---------- */
 // Heavy one-off work (building a model, compiling its shaders) waits for a pause in scrolling, so it never
@@ -264,7 +296,7 @@ let lastScroll = 0;
 addEventListener('scroll', () => { lastScroll = performance.now(); }, { passive: true });
 const whenQuiet = f => { const check = () => (performance.now() - lastScroll > 300 ? f() : setTimeout(check, 150)); check(); };
 
-function makeStage(el, { paper = false, cam = [4, 3, 5], target = [0, .8, 0], orbit = true, auto = true, exposure = 1 } = {}) {
+function makeStage(el, { paper = false, cam = [4, 3, 5], target = [0, .8, 0], auto = true, exposure = 1 } = {}) {
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
@@ -286,7 +318,6 @@ function makeStage(el, { paper = false, cam = [4, 3, 5], target = [0, .8, 0], or
   let shadowTick = 0;
   renderer.render = (sc, cam) => { if (shadowTick++ % 2 === 0) renderer.shadowMap.needsUpdate = true; _render(sc, cam); };
   el.prepend(renderer.domElement);
-  renderer.domElement.setAttribute('aria-hidden', 'true');
 
   const scene = new THREE.Scene();
   const pmrem = new THREE.PMREMGenerator(renderer);
@@ -315,10 +346,7 @@ function makeStage(el, { paper = false, cam = [4, 3, 5], target = [0, .8, 0], or
   controls.enableZoom = false; controls.enablePan = false; controls.enableDamping = true;
   controls.minPolarAngle = .25; controls.maxPolarAngle = Math.PI / 2.08;
   controls.autoRotate = auto && !reduced; controls.autoRotateSpeed = .7;
-  // Touch screens keep native scrolling; dragging to rotate is a pointer-only nicety.
-  controls.enabled = orbit && finePointer;
-  // OrbitControls sets touch-action:none; give vertical swipes back to the page on touch screens.
-  if (!controls.enabled) renderer.domElement.style.touchAction = 'pan-y';
+  const orbitView = installStageOrbit(el, renderer.domElement, camera, controls);
   controls.update();
 
   const ticks = [];
@@ -356,7 +384,7 @@ function makeStage(el, { paper = false, cam = [4, 3, 5], target = [0, .8, 0], or
     (renderer.compileAsync ? renderer.compileAsync(scene, camera) : Promise.resolve()).then(warm).catch(warm);
   }), 600);
 
-  return { renderer, scene, camera, controls, sun, hemi, catcher, ticks, ready: () => el.classList.add('ready') };
+  return { renderer, scene, camera, controls, orbitView, sun, hemi, catcher, ticks, ready: () => el.classList.add('ready') };
 }
 function fail(el, msg) {
   el.classList.add('failed');
@@ -719,20 +747,61 @@ async function initDetails(el) {
   const stepsEl = document.querySelector('[data-detail-steps]');
   const keysEl = document.querySelector('[data-detail-keys]');
   const titleEl = document.querySelector('[data-detail-title]');
-  const show = id => {
-    if (!cache[id]) {
-      const d = DETAILS[id](M);
-      const wrap = new THREE.Group(); wrap.add(fitTo(d.g, 2.6));
-      d.parts.forEach(p => { p.obj.userData.base = p.obj.position.y; });
-      cache[id] = { id, wrap, parts: d.parts };
-    }
+  let selection = 0;
+  const show = async id => {
+    const request = ++selection;
+    el.classList.remove('ready');
+    if (!cache[id]) cache[id] = buildDetail(id);
+    const next = await cache[id];
+    if (request !== selection) return;
     if (cur) holder.remove(cur.wrap);
-    cur = cache[id]; holder.add(cur.wrap);
+    cur = next; holder.add(cur.wrap);
     const d = INFO[id] || { steps: [], keys: [] };
     if (titleEl) titleEl.textContent = d.title || '';
     if (stepsEl) stepsEl.innerHTML = d.steps.map(s => `<li>${s}</li>`).join('');
     if (keysEl) keysEl.innerHTML = d.keys.map(s => `<li>${s}</li>`).join('');
     t = 0; playing = true; apply();
+    st.ready();
+  };
+  const buildDetail = async id => {
+    const original = DETAILS[id](M);
+    try {
+      const model = await loadGLB(MODELS.details[id]);
+      const parts = [];
+      [...model.children].forEach(obj => {
+        const match = /^step(\d+)_(\d+)$/.exec(obj.name);
+        if (!match) return;
+        const step = Number(match[1]);
+        const { mode = 'drop', until = null, k = 0 } = original.parts[Number(match[2])] || {};
+        // GLB vertices are baked in model space. A pivot at the foot lets a form grow from its base.
+        const pivot = new THREE.Group();
+        if (mode !== 'drop') {
+          const bounds = new THREE.Box3().setFromObject(obj);
+          bounds.getCenter(pivot.position);
+          if (mode === 'grow') pivot.position.y = bounds.min.y;
+        }
+        obj.position.sub(pivot.position);
+        pivot.add(obj);
+        model.add(pivot);
+        pivot.userData.base = pivot.position.y;
+        parts.push({ obj: pivot, step, k, mode, until });
+        obj.traverse(child => {
+          if (child.material?.name !== 'ConcreteFinal') return;
+          child.material.transparent = true;
+          child.material.opacity = .56;
+          child.material.depthWrite = false;
+        });
+      });
+      if (!parts.length) throw new Error('No assembly steps in ' + id);
+      return { id, wrap: fitTo(model, 2.6), parts };
+    } catch (e) {
+      delete cache[id];
+      console.warn('Using procedural detail', id, e);
+    }
+    const d = original;
+    const wrap = new THREE.Group(); wrap.add(fitTo(d.g, 2.6));
+    d.parts.forEach(p => { p.obj.userData.base = p.obj.position.y; });
+    return { id, wrap, parts: d.parts };
   };
   st.ticks.push(dt => {
     if (!playing || !cur) return;
@@ -747,8 +816,11 @@ async function initDetails(el) {
   }));
   const replay = document.querySelector('[data-detail-replay]');
   if (replay) replay.addEventListener('click', () => { t = 0; playing = true; });
-  if (list[0]) { list[0].classList.add('active'); show(list[0].dataset.detail); }
-  st.ready();
+  if (list[0]) {
+    list[0].classList.add('active');
+    list[0].setAttribute('aria-pressed', 'true');
+    await show(list[0].dataset.detail);
+  } else st.ready();
 }
 
 /* A catalogue viewer: a list of buttons, one model at a time, specs filled from window data. Used for materials and furniture. */
@@ -759,24 +831,33 @@ async function initCatalog(el, { builders, attr, info, specSel, size = 2.4, cam 
   const M = makeMats();
   const holder = new THREE.Group();
   st.scene.add(holder);
-  let current = null, enterT = 1;
+  let current = null, enterT = 1, selection = 0;
   const cache = {};
 
-  const build = async id => {
-    if (cache[id]) return cache[id];
-    let obj;
-    if (MODELS[id]) {
-      try { obj = fitTo(await loadGLB(MODELS[id]), size); } catch (e) { console.warn('GLB lỗi, dùng mô hình dựng sẵn:', id, e); }
+  const wrapModel = model => {
+    const wrap = new THREE.Group(); wrap.add(fitTo(model, size));
+    return wrap;
+  };
+  const build = id => {
+    if (!MODELS[id]) return wrapModel(builders[id](M));
+    if (!cache[id]) {
+      cache[id] = loadGLB(MODELS[id]).then(wrapModel).catch(error => {
+        delete cache[id];
+        console.warn('Using procedural catalogue model', id, error);
+        return wrapModel(builders[id](M));
+      });
     }
-    if (!obj) obj = fitTo(builders[id](M), size);
-    const wrap = new THREE.Group(); wrap.add(obj);
-    return (cache[id] = wrap);
+    return cache[id];
   };
   const show = async id => {
+    const request = ++selection;
+    el.classList.remove('ready');
     const obj = await build(id);
+    if (request !== selection) return;
     if (current) holder.remove(current);
     current = obj; holder.add(obj);
     enterT = reduced ? 1 : 0;
+    st.ready();
   };
   st.ticks.push(dt => {
     if (enterT < 1) {
@@ -802,7 +883,7 @@ async function initCatalog(el, { builders, attr, info, specSel, size = 2.4, cam 
   };
   list.forEach(b => b.addEventListener('click', () => select(b)));
   if (list[0]) select(list[0]);
-  st.ready();
+  else st.ready();
 }
 
 const initMaterials = el => initCatalog(el, { builders: SAMPLES, attr: 'mat', info: window.ADDC_MATERIALS || {}, specSel: '[data-mat-spec]' });
@@ -956,32 +1037,17 @@ function applyParts(parts, pf) {
 /* ---------- Thi công: scroll drives the build ---------- */
 async function initBuild(el) {
   const section = el.closest('.build');
-  const st = makeStage(el, { cam: [16, 11, 19], target: [0, 4, 0], orbit: false, auto: false, exposure: 1.05 });
+  const st = makeStage(el, { cam: [16, 11, 19], target: [0, 4, 0], auto: false, exposure: 1.05 });
   if (!st) return;
   const M = makeMats();
   const PH = window.ADDC_PHASES || [];
   const N = PH.length || 7;
-  const usingGLB = MODELS.phases.length === N && MODELS.phases.every(Boolean);
-  let house, glbPhases = [];
-  if (usingGLB) {
-    try {
-      glbPhases = await Promise.all(MODELS.phases.map(loadGLB));
-      // One shared scale and position, taken from the finished house, so the building never jumps between phases.
-      const last = fitTo(glbPhases[glbPhases.length - 1], 14);
-      glbPhases.forEach(o => {
-        o.scale.copy(last.scale); o.position.copy(last.position); o.visible = false;
-        o.traverse(m => { if (m.isMesh) m.castShadow = m.receiveShadow = true; });
-        st.scene.add(o);
-      });
-    }
-    catch (e) { console.warn('GLB lỗi, dùng mô hình dựng sẵn', e); glbPhases = []; }
-  }
-  if (!glbPhases.length) { house = buildHouse(M); st.scene.add(house.group); }
-  // Compile every part once, all visible, so no shader is built mid-scroll at a phase change.
-  if (house) {
-    house.parts.forEach(pt => { pt.obj.visible = true; });
-    try { if (st.renderer.compileAsync) await st.renderer.compileAsync(st.scene, st.camera); } catch (e) {}
-    st.renderer.shadowMap.needsUpdate = true; st.renderer.render(st.scene, st.camera);
+  let house;
+  const phases = createPhasePlayer(st.scene, MODELS.phases, loadGLB, prioritizeModel);
+  const first = await phases.first;
+  if (!first && !(await phases.loaded).some(Boolean)) {
+    house = buildHouse(M);
+    st.scene.add(house.group);
   }
   st.sun.position.set(10, 18, 12);
 
@@ -994,6 +1060,7 @@ async function initBuild(el) {
     steps: [...document.querySelectorAll('[data-phase-go]')]
   };
   let shown = -1, pf = 0, target = 0, ang = .75;
+  const viewPosition = new THREE.Vector3(), viewTarget = new THREE.Vector3();
   const setPhase = i => {
     if (i === shown || !PH[i]) return;
     shown = i;
@@ -1002,7 +1069,7 @@ async function initBuild(el) {
     ui.desc.textContent = PH[i].desc;
     ui.mats.innerHTML = PH[i].mats.map(([a, b]) => `<li><span>${a}</span><small>${b}</small></li>`).join('');
     ui.steps.forEach((b, k) => k === i ? b.setAttribute('aria-current', 'step') : b.removeAttribute('aria-current'));
-    glbPhases.forEach((o, k) => { o.visible = k === i; });
+
   };
   const read = () => {
     const r = section.getBoundingClientRect();
@@ -1021,6 +1088,7 @@ async function initBuild(el) {
   }));
   read();
   pf = target;
+  phases.draw(pf, { reduced });
 
   // Visitor options: day or night light, and whether the temporary works (hoarding, pile press, scaffolding) show.
   let hideTemp = false;
@@ -1040,6 +1108,7 @@ async function initBuild(el) {
   }));
   st.ticks.push(dt => {
     pf += (target - pf) * Math.min(1, dt * (reduced ? 60 : 5));
+    phases.draw(pf, { hideTemporary: hideTemp, reduced });
     if (house) { applyParts(house.parts, pf); if (hideTemp) house.parts.forEach(pt => { if (pt.until !== undefined) pt.obj.visible = false; }); }
     const k = pf / N;
     const goal = .75 - k * 1.2;
@@ -1047,8 +1116,7 @@ async function initBuild(el) {
     // Start close on the piles, pull back as the house rises.
     const narrow = el.clientWidth < el.clientHeight * 1.15 ? 1.75 : 1;
     const R = (15 + k * 16) * narrow, h = (8 + k * 5) * (narrow > 1 ? 1.3 : 1);
-    st.camera.position.set(Math.sin(ang) * R, h, Math.cos(ang) * R);
-    st.controls.target.set(0, .8 + k * 4.2, 0);
+    st.orbitView.follow(viewPosition.set(Math.sin(ang) * R, h, Math.cos(ang) * R), viewTarget.set(0, .8 + k * 4.2, 0));
   });
   st.ready();
 }
@@ -1102,7 +1170,9 @@ async function initBlueprint(el) {
   };
   let tw = 1, from = null, to = null;
   const setView = v => {
-    to = V[v]; from = { pos: st.camera.position.clone(), tgt: st.controls.target.clone() }; tw = reduced ? 1 : 0;
+    st.orbitView.leave(false);
+    to = V[v];
+    st.orbitView.setBase(to.pos, to.tgt); from = { pos: st.camera.position.clone(), tgt: st.controls.target.clone() }; tw = reduced ? 1 : 0;
     if (reduced) { st.camera.position.copy(to.pos); st.controls.target.copy(to.tgt); }
     st.renderer.clippingPlanes = to.clip;
     st.controls.autoRotate = false; sway = v === 'persp' && !reduced && !touched;
@@ -1111,6 +1181,7 @@ async function initBlueprint(el) {
     if (cap) cap.textContent = { persp: 'Phối cảnh tổng thể', plan: 'Mặt bằng tầng trệt, cắt ở cao độ 1,5 m', section: 'Mặt cắt dọc qua giữa nhà' }[v];
   };
   st.ticks.push(dt => {
+    if (st.orbitView.active) { tw = 1; return; }
     if (tw >= 1 || !to) return;
     tw = Math.min(1, tw + dt / 1.3);
     const e = 1 - Math.pow(1 - tw, 3);
@@ -1122,7 +1193,7 @@ async function initBlueprint(el) {
   st.controls.addEventListener('start', () => { touched = true; sway = false; });
   const sph = new THREE.Spherical().setFromVector3(st.camera.position.clone().sub(st.controls.target));
   st.ticks.push(dt => {
-    if (!sway || tw < 1) return;
+    if (st.orbitView.active || !sway || tw < 1) return;
     swayT += dt;
     sph.setFromVector3(st.camera.position.clone().sub(st.controls.target));
     sph.theta = .55 + Math.sin(swayT * .25) * .6;
@@ -1137,9 +1208,11 @@ async function initBlueprint(el) {
   // Facade finish: changes the render coat in the "Vật liệu" view (and switches to it).
   const FACADE = { trang: ['#efe9da'], kem: ['#e6d9bf'], xam: ['#a8a49b'], 'dat-nung': ['#c07a55'] };
   const plasterMaps = {};
+  const renderCoat = new Set(meshes.map(o => o.userData.mat).filter(m => m?.name === 'Render'));
   document.querySelectorAll('[data-bp-facade]').forEach(b => b.addEventListener('click', () => {
     document.querySelectorAll('[data-bp-facade]').forEach(x => { x.classList.toggle('active', x === b); x.setAttribute('aria-pressed', x === b); });
     const k = b.dataset.bpFacade;
+    renderCoat.forEach(m => m.color.set(FACADE[k][0]));
     M.plaster.map = plasterMaps[k] || (plasterMaps[k] = T.plaster(FACADE[k][0])); M.plaster.needsUpdate = true;
     const real = document.querySelector('[data-bp-mode="real"]'); if (real && !real.classList.contains('active')) real.click();
   }));
@@ -1155,13 +1228,14 @@ async function initBlueprint(el) {
   };
   if (sun) { sun.addEventListener('input', () => setSun(+sun.value)); setSun(+sun.value); }
 
-  if (house) {
+  {
+    const apply = glb ? assembleHouse(glb) : progress => applyParts(house.parts, progress);
     let pf = reduced ? 7 : 0, playing = false;
-    applyParts(house.parts, pf);
+    apply(pf);
     new IntersectionObserver(([e], io) => { if (e.isIntersecting) { playing = true; io.disconnect(); } }, { threshold: .05 }).observe(el);
-    st.ticks.push(dt => { if (playing && pf < 7) { pf = Math.min(7, pf + dt * 2.2); applyParts(house.parts, pf); } });
+    st.ticks.push(dt => { if (playing && pf < 7) { pf = Math.min(7, pf + dt * 2.2); apply(pf); } });
     const replay = document.querySelector('[data-bp-replay]');
-    if (replay) replay.addEventListener('click', () => { pf = 0; playing = true; });
+    if (replay) replay.addEventListener('click', () => { pf = reduced ? 7 : 0; apply(pf); playing = true; });
   }
   st.ready();
 }
@@ -1172,7 +1246,6 @@ async function initBlueprint(el) {
 async function initRoom(el) {
   const st = makeStage(el, { paper: true, cam: [6.2, 3.8, 7.2], target: [0, 1.1, -.6], auto: false, exposure: 1 });
   if (!st) return;
-  st.controls.minAzimuthAngle = -.15; st.controls.maxAzimuthAngle = 1.25;
   const env = st.scene.environment;
   const M = makeMats();
   const tl = new THREE.TextureLoader();
@@ -1182,8 +1255,49 @@ async function initRoom(el) {
   });
   photo('img/materials/da-marble.jpg', 2, M.marbleFloor);
   const R = buildRoom(M);
+  const extras = loadGLB(MODELS.extras).catch(e => { console.warn('ADDC room props unavailable', e); return null; });
+  let roomFloor, roomWalls, backShell = [], sideShell = [];
+  const roomWood = new Map(), roomFabric = new Set();
+  const registerFinishes = model => model.traverse(obj => {
+    if (!obj.isMesh) return;
+    obj.castShadow = obj.receiveShadow = true;
+    const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
+    materials.forEach(m => {
+      if (/^(Oak|Walnut)$/.test(m.name) && !roomWood.has(m)) roomWood.set(m, { map: m.map, color: m.color.clone() });
+      if (m.name === 'Fabric') roomFabric.add(m);
+    });
+  });
+  try {
+    const model = await loadGLB(MODELS.room);
+    const objects = model.children.slice();
+    const named = name => objects.find(obj => obj.name === name);
+    const floor = named('Floor');
+    const walls = objects.filter(obj => /^Wall_/.test(obj.name));
+    if (!floor?.isMesh || !walls.length) throw new Error('Missing room surfaces');
+    roomFloor = floor.material;
+    roomWalls = walls.map(obj => obj.material);
+    backShell = [walls[0], named('Artwork'), named('ArtFrame')].filter(Boolean);
+    sideShell = [...walls.slice(1), ...objects.filter(obj => /^(Window|Curtain)/.test(obj.name))];
+    registerFinishes(model);
+    R.group.clear();
+    R.group.add(...objects, R.slats, R.bulb);
+    R.floor = floor;
+    R.walls = walls;
+    R.art = named('Artwork') || R.art;
+    R.shade = named('Pendant')?.children.find(obj => obj.isMesh) || R.shade;
+    R.living = objects.filter(obj => /^(Rug|Sofa_|Armchair_|Sideboard|CoffeeTable|Book|Vase|Ceramic_)/.test(obj.name));
+  } catch (e) { console.warn('Using procedural room', e); }
   const g = R.group; st.scene.add(g);
+  const upgradedSlats = (await extras)?.getObjectByName('WallSlats');
+  if (upgradedSlats) {
+    R.slats.removeFromParent();
+    registerFinishes(upgradedSlats);
+    upgradedSlats.visible = false;
+    g.add(upgradedSlats);
+    R.slats = upgradedSlats;
+  }
   const { slats, art, shade, bulb } = R;
+  let showSlats = false;
 
   // Floors
   const terr = M.terrazzo.clone(); terr.map = T.terrazzo(); terr.map.repeat.set(3, 2.5);
@@ -1218,11 +1332,23 @@ async function initRoom(el) {
 
   const set = {
     space: v => { Object.entries(sets).forEach(([k, grp]) => { grp.visible = k === v; }); pop = { grp: sets[v], t: 0 }; },
-    floor: v => { R.floor.material = FLOORS[v]; },
-    wall: v => { const m = wall(v); R.walls.forEach(o => { o.material = m; }); art.material = v === 'reu' ? M.paintCream : M.paintMoss; },
-    lam: v => { slats.visible = v === 'co'; },
-    wood: v => { WOOD[v](); [M.oak, M.walnut].forEach(m => { m.needsUpdate = true; }); },
-    fabric: v => { M.fabric.color.set(FABRIC[v]); },
+    floor: v => { R.floor.material = v === 'go' && roomFloor ? roomFloor : FLOORS[v]; },
+    wall: v => {
+      R.walls.forEach((o, i) => { o.material = v === 'kem' && roomWalls ? roomWalls[i] : wall(v); });
+      if (!roomWalls) art.material = v === 'reu' ? M.paintCream : M.paintMoss;
+    },
+    lam: v => { showSlats = v === 'co'; },
+    wood: v => {
+      WOOD[v](); [M.oak, M.walnut].forEach(m => { m.needsUpdate = true; });
+      roomWood.forEach(({ map, color }, m) => {
+        m.map = v === 'trang' ? null : map;
+        m.color.copy(color);
+        if (v === 'trang') m.color.set('#ebe8e1');
+        if (v === 'oc-cho') m.color.multiply(new THREE.Color('#b88f70'));
+        m.needsUpdate = true;
+      });
+    },
+    fabric: v => { [M.fabric, ...roomFabric].forEach(m => m.color.set(FABRIC[v])); },
     light: v => {
       const L = { ngay: [2.6, [-9, 9, 2], '#fff3df', .55, 0, 1], chieu: [2.1, [-10, 3.2, 5], '#ffb070', .32, 5, 1.08], toi: [.12, [-8, 4, 1], '#9bb0ff', .06, 14, 1.25] }[v];
       st.sun.intensity = L[0]; st.sun.position.set(...L[1]); st.sun.color.set(L[2]); st.hemi.intensity = L[3];
@@ -1232,6 +1358,12 @@ async function initRoom(el) {
     }
   };
   st.ticks.push(dt => {
+    const { x, z } = st.camera.position;
+    const hideBack = st.orbitView.active && z < -2.45;
+    const hideSide = st.orbitView.active && x < -2.92;
+    backShell.forEach(part => { part.visible = !hideBack; });
+    sideShell.forEach(part => { part.visible = !hideSide; });
+    slats.visible = showSlats && !hideBack;
     if (!pop) return;
     pop.t = Math.min(1, pop.t + dt * 2.2);
     const e = easeOut(pop.t); pop.grp.position.y = (1 - e) * .5; pop.grp.scale.setScalar(.92 + .08 * e);
@@ -1253,6 +1385,40 @@ async function initRoom(el) {
   document.querySelectorAll('[data-room]').forEach(b => b.addEventListener('click', () => choose(b)));
   // Start from whatever the page marks as active in each group.
   order.forEach(k => { const b = document.querySelector(`[data-room="${k}"].active`) || document.querySelector(`[data-room="${k}"]`); if (b) choose(b); });
+  const presets = [
+    [sets['phong-ngu'], bed, 'giuong'],
+    [sets['phong-ngu'], ward, 'tu-ao'],
+    [sets['lam-viec'], desk, 'ban-lam-viec'],
+    [sets['lam-viec'], shelf, 'ke-sach'],
+  ];
+  const refreshFinishes = () => ['wood', 'fabric'].forEach(key => {
+    const active = document.querySelector(`[data-room="${key}"].active`);
+    if (active) set[key](active.dataset.v);
+  });
+  presets.forEach(async ([group, original, id]) => {
+    try {
+      const model = await loadGLB(MODELS[id]);
+      registerFinishes(model);
+      const { x, y, z } = original.position;
+      group.add(mountedModel(model, { x, y, z, angle: original.rotation.y }));
+      original.removeFromParent();
+      refreshFinishes();
+    } catch (e) { console.warn('ADDC preset piece unavailable', id, e); }
+  });
+  const extraModel = await extras;
+  const bedroomRug = extraModel?.getObjectByName('BedroomRug');
+  if (bedroomRug) {
+    sets['phong-ngu'].children.find(obj => obj.material === M.rug)?.removeFromParent();
+    registerFinishes(bedroomRug);
+    sets['phong-ngu'].add(bedroomRug);
+  }
+  const readingChair = extraModel?.getObjectByName('ReadingChair');
+  if (readingChair) {
+    registerFinishes(readingChair);
+    sets['lam-viec'].add(mountedModel(readingChair, { x: 2.1, z: .5, angle: -1.1 }));
+    reading.removeFromParent();
+    refreshFinishes();
+  }
   const send = document.querySelector('[data-room-send]');
   if (send) send.addEventListener('click', () => {
     const msg = document.getElementById('contactMessage'), svc = document.getElementById('contactService');
@@ -1309,11 +1475,12 @@ function buildRoom(M) {
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 async function initJourney(el) {
   const section = el.closest('.build');
-  const st = makeStage(el, { cam: [24, 30, 30], target: [0, 0, 0], orbit: false, auto: false, exposure: 1.05 });
+  const st = makeStage(el, { cam: [24, 30, 30], target: [0, 0, 0], auto: false, exposure: 1.05 });
   if (!st) return;
   const M = makeMats();
   const house = buildHouse(M);
   st.scene.add(house.group);
+  const phases = createPhasePlayer(st.scene, MODELS.phases, loadGLB, prioritizeModel);
   st.sun.position.set(10, 18, 12);
   st.scene.background = null;
 
@@ -1339,6 +1506,18 @@ async function initJourney(el) {
   XS.forEach(x => ZS.forEach(z => { const s = mesh(new THREE.CylinderGeometry(.04, .04, .7, 8), M.pressRed, x, .35, z); stakes.add(s); }));
   const outline = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints([[-W / 2, D / 2], [W / 2, D / 2], [W / 2, -D / 2], [-W / 2, -D / 2]].map(([x, z]) => new THREE.Vector3(x, .05, z))), new THREE.LineBasicMaterial({ color: '#e9a47f', transparent: true }));
   stakes.add(outline); st.scene.add(stakes);
+  const survey = loadGLB(MODELS.extras).then(extras => {
+    const stake = extras.getObjectByName('SurveyStake');
+    if (!stake) return;
+    stakes.clear();
+    XS.forEach(x => ZS.forEach(z => {
+      const placed = stake.clone(true);
+      placed.position.set(x, 0, z);
+      placed.traverse(obj => { if (obj.isMesh) obj.castShadow = true; });
+      stakes.add(placed);
+    }));
+    stakes.add(outline);
+  }).catch(e => console.warn('ADDC survey props unavailable', e));
 
   // Furnished ground floor, seen at the end of the flight.
   const room = new THREE.Group(), y0 = L0;
@@ -1359,6 +1538,34 @@ async function initJourney(el) {
   st.scene.add(lamp);
   room.add(block(1.1, .75, .03, M.paintMoss, -1.8, y0 + 1.5, -D / 2 + .25));
   room.visible = false; st.scene.add(room);
+  const rebuiltRoom = new THREE.Group();
+  rebuiltRoom.name = 'ADDC rebuilt walkthrough interior';
+  rebuiltRoom.visible = false;
+  st.scene.add(rebuiltRoom);
+  loadGLB(MODELS.room).then(async model => {
+    const decor = model.children.filter(obj => /^(Sofa_|CoffeeTable|Book$|Vase$|PlantPot$|Fig|Pendant|ArtFrame$|Artwork$|Rug$)/.test(obj.name));
+    if (!decor.length) return;
+    const living = new THREE.Group();
+    decor.forEach(obj => {
+      obj.traverse(mesh => { if (mesh.isMesh) mesh.castShadow = mesh.receiveShadow = true; });
+      living.add(obj);
+    });
+    living.position.set(1.35, L0, -.15);
+    const floor = model.getObjectByName('Floor');
+    if (floor) {
+      const thickness = new THREE.Box3().setFromObject(floor).getSize(new THREE.Vector3()).y;
+      rebuiltRoom.add(mountedModel(floor, { y: L0 + .006 - thickness, width: W - .7, depth: D - .7 }));
+    }
+    rebuiltRoom.add(living);
+    const furnishings = [
+      ['ban-an', { x: -1.8, y: L0, z: -3.2 }],
+      ['tu-ao', { x: 3.25, y: L0, z: -2.6, angle: -Math.PI / 2 }],
+    ];
+    await Promise.all(furnishings.map(async ([id, placement]) => {
+      try { rebuiltRoom.add(mountedModel(await loadGLB(MODELS[id]), placement)); }
+      catch (e) { console.warn('ADDC walkthrough furniture unavailable', id, e); }
+    }));
+  }).catch(e => console.warn('ADDC walkthrough interior unavailable', e));
   const glows = house.parts.filter(pt => pt.obj.material === M.warm).map(pt => pt.obj);
 
   // Camera path: [step, position, target, field of view].
@@ -1378,17 +1585,6 @@ async function initJourney(el) {
     return [p, v.clone(), fa + (fb - fa) * u];
   };
 
-  // Compile and draw everything once, all of it visible, before the visitor reaches this section:
-  // otherwise the furniture's first appearance compiled its shaders mid-scroll and froze a frame for most of a second.
-  house.parts.forEach(pt => { pt.obj.visible = true; }); room.visible = true; wire.forEach(ls => { ls.visible = true; });
-  try { if (st.renderer.compileAsync) await st.renderer.compileAsync(st.scene, st.camera); } catch (e) {}
-  // Draw one frame from every point on the camera path, so the driver has seen each view before the visitor does.
-  for (const [, cp, ct, fov] of K) {
-    st.camera.position.set(...cp); st.camera.fov = fov; st.camera.updateProjectionMatrix(); st.camera.lookAt(...ct);
-    st.renderer.shadowMap.needsUpdate = true; st.renderer.render(st.scene, st.camera);
-    await new Promise(r => setTimeout(r, 30));
-  }
-
   let target = 0, t = 0;
   const read = () => {
     const r = section.getBoundingClientRect();
@@ -1402,20 +1598,24 @@ async function initJourney(el) {
     t += (target - t) * Math.min(1, dt * (reduced ? 60 : 4));
     // Build: nothing until the contract step, piles at step 4, structure through step 5, finishes and lights in step 6.
     const pf = t < 3 ? 0 : t < 4 ? (t - 3) * 1.2 : t < 5 ? 1.2 + (t - 4) * 3.8 : Math.min(7.2, 5 + (t - 5) * 5.5);
-    applyParts(house.parts, pf);
+    if (t < 3) phases.hide();
+    const interior = t > 5.78 && rebuiltRoom.children.length > 0;
+    house.group.visible = t >= 3 && !phases.draw(pf, { reduced, interior });
+    if (house.group.visible) applyParts(house.parts, pf);
     const show = smooth(1, 1.5, t) * (1 - smooth(4.4, 5.1, t));
     wire.forEach((ls, i) => { const d = smooth(1.1 + i * .22, 1.5 + i * .22, t); ls.material.opacity = .9 * show * d; ls.visible = ls.material.opacity > .01; ls.scale.y = Math.max(d, .001); });
     grid.material.opacity = .45 * (1 - smooth(3, 3.6, t)); grid.visible = grid.material.opacity > .01;
     const sv = smooth(0, .5, t) * (1 - smooth(3.2, 3.8, t)); stakes.visible = sv > .01; stakes.scale.setScalar(Math.max(sv, .001));
     const inside = smooth(5.55, 5.85, t);
-    room.visible = inside > .01; room.scale.setScalar(1);
+    rebuiltRoom.visible = inside > .01 && rebuiltRoom.children.length > 0;
+    room.visible = inside > .01 && !rebuiltRoom.visible;
     lamp.intensity = 6 * inside;
     glows.forEach(g => { g.visible = g.visible && t < 5.38; });
     const [p, l, f] = sample(t);
     pos.lerp(p, Math.min(1, dt * 6)); look.lerp(l, Math.min(1, dt * 6));
-    st.camera.position.copy(pos); st.controls.target.copy(look);
-    if (Math.abs(st.camera.fov - f) > .01) { st.camera.fov = f; st.camera.updateProjectionMatrix(); }
+    st.orbitView.follow(pos, look, f);
   });
+  await survey;
   st.ready();
 }
 
