@@ -225,16 +225,16 @@ function initHeader() {
   // Read the background just under the bar: the first opaque one up the tree decides dark or light.
   const toneOf = el => {
     for (; el && el !== document.documentElement; el = el.parentElement) {
-      if (el.__dark !== undefined) return el.__dark;
       const m = getComputedStyle(el).backgroundColor.match(/[\d.]+/g);
-      if (m && (m[3] === undefined || +m[3] > .5)) return (el.__dark = .2126 * m[0] + .7152 * m[1] + .0722 * m[2] < 128);
+      if (m && (m[3] === undefined || +m[3] > .5)) return .2126 * m[0] + .7152 * m[1] + .0722 * m[2] < 128;
     }
     return false;
   };
   const setTone = () => {
     toneT = 0;
     const el = document.elementFromPoint(innerWidth / 2, header.offsetHeight + 2);
-    header.classList.toggle('is-light', !!el && !toneOf(el));
+    if (!el || el === document.documentElement) return; // nothing to hit yet (page cover): keep the dark default
+    header.classList.toggle('is-light', !toneOf(el));
   };
   // Rows ignore a resting pointer while the page scrolls under it, but a moving mouse always gets hover at once.
   addEventListener('mousemove', e => {
@@ -829,17 +829,17 @@ function initV2() {
 }
 
 
-// Colour test: the moss theme is applied before paint from the saved choice; the footer button switches it.
+// Moss is the default palette, set before paint; the footer button switches to the original stone and terracotta and remembers it.
 function initTheme() {
   const root = document.documentElement;
   $$('[data-theme-switch]').forEach(b => {
-    const label = () => { b.textContent = root.getAttribute('data-theme') === 'moss' ? 'Bảng màu gốc' : 'Thử bảng màu xanh rêu'; };
+    const label = () => { b.textContent = root.getAttribute('data-theme') === 'moss' ? 'Xem bảng màu cũ' : 'Bảng màu xanh rêu'; };
     label();
     b.addEventListener('click', () => {
       const moss = root.getAttribute('data-theme') !== 'moss';
       if (moss) root.setAttribute('data-theme', 'moss'); else root.removeAttribute('data-theme');
-      try { localStorage.setItem('addc-theme', moss ? 'moss' : ''); } catch (e) {}
-      $$('[data-theme-switch]').forEach(x => { x.textContent = moss ? 'Bảng màu gốc' : 'Thử bảng màu xanh rêu'; });
+      try { localStorage.setItem('addc-theme', moss ? 'moss' : 'original'); } catch (e) {}
+      $$('[data-theme-switch]').forEach(x => { x.textContent = moss ? 'Xem bảng màu cũ' : 'Bảng màu xanh rêu'; });
     });
   });
 }
