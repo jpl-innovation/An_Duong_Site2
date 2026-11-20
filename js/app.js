@@ -221,7 +221,21 @@ function runClock() {
 function initHeader() {
   const header = $('#header');
   const root = document.documentElement;
-  let lastY = 0, scrollEnd, lastMove = 0;
+  let lastY = 0, scrollEnd, lastMove = 0, toneT = 0;
+  // Read the background just under the bar: the first opaque one up the tree decides dark or light.
+  const toneOf = el => {
+    for (; el && el !== document.documentElement; el = el.parentElement) {
+      if (el.__dark !== undefined) return el.__dark;
+      const m = getComputedStyle(el).backgroundColor.match(/[\d.]+/g);
+      if (m && (m[3] === undefined || +m[3] > .5)) return (el.__dark = .2126 * m[0] + .7152 * m[1] + .0722 * m[2] < 128);
+    }
+    return false;
+  };
+  const setTone = () => {
+    toneT = 0;
+    const el = document.elementFromPoint(innerWidth / 2, header.offsetHeight + 2);
+    header.classList.toggle('is-light', !!el && !toneOf(el));
+  };
   // Rows ignore a resting pointer while the page scrolls under it, but a moving mouse always gets hover at once.
   addEventListener('mousemove', e => {
     if (!e.movementX && !e.movementY) return;
@@ -239,7 +253,11 @@ function initHeader() {
     header.classList.toggle('hide', !menuOpen && y > lastY && y > 200);
     document.body.classList.toggle('scrolled', y > innerHeight * 0.6);
     lastY = y;
+    if (!toneT) toneT = setTimeout(setTone, 50);
   }, { passive: true });
+  addEventListener('resize', setTone);
+  addEventListener('load', setTone);
+  setTone();
 
   const btn = $('#menuBtn'), menu = $('#menu');
   const setMenu = open => {
@@ -922,7 +940,7 @@ function useSizes(root = document) {
 }
 // A picture frame shows a running accent line until its picture is decoded, then the picture fades in.
 // Pictures already in the cache are left alone, and a frame never stays covered for more than a few seconds once on screen.
-const LD_FRAMES = '.pcard-media, .card-media, .news-media, .split-media, .strip-media, .mosaic figure, .person figure, .team-grid figure';
+const LD_FRAMES = '.equip-media, .pcard-media, .card-media, .news-media, .split-media, .strip-media, .mosaic figure, .person figure, .team-grid figure';
 const ldWatch = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => {
   if (!e.isIntersecting) return;
   ldWatch.unobserve(e.target);
