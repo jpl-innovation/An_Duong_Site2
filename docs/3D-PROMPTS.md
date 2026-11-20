@@ -4,10 +4,31 @@ Website đang dùng mô hình 3D dựng bằng code: đúng hình khối, nhưng
 
 ## 0. Cách làm cho mỗi mô hình
 
-1. Đưa vào raea tệp gốc `models/source/<tên>.glb` và ảnh `models/reference/<tên>.png` (ảnh chụp mô hình gốc trên web, nếu có).
-2. Đưa thêm **ảnh thật làm mẫu** ghi ở cột "Ảnh thật" (ảnh công trình của chính ADDC). raea sẽ bắt chước chất liệu và không khí của công trình thật.
-3. Dán **Lời nhắc chung (mục 1)**, rồi **lời nhắc riêng** của mô hình đó. Với nhóm có lời nhắc nhóm (nội thất, giai đoạn thi công, chi tiết kết cấu), dán lời nhắc nhóm vào giữa.
-4. Kiểm bản raea xuất ra theo **mục 9 (Duyệt hay làm lại)** trước khi gửi lại để nối vào web.
+raea đọc và ghi thẳng trên máy, nên mọi đường dẫn trong tài liệu này là đường dẫn trên ổ D:. Thư mục gốc của website: `D:\Rum website\ctyanduong\ctyanduong`.
+
+Với mỗi mô hình, dán cho raea theo thứ tự:
+
+1. **Khối FILES** dưới đây, thay `<tên>` bằng tên tệp (ví dụ `be-tong`, `noi-that-sofa`, `phase-3`, `chi-tiet-cot`) và điền đường dẫn ảnh thật lấy từ cột "Ảnh thật" của mô hình đó.
+2. **Lời nhắc chung (mục 1)**.
+3. **Lời nhắc nhóm**, nếu nhóm đó có (nội thất, giai đoạn thi công, chi tiết kết cấu).
+4. **Lời nhắc riêng** của mô hình.
+
+Sau đó kiểm bản raea xuất ra theo **mục 9 (Duyệt hay làm lại)**.
+
+```
+FILES (read and write directly on this computer)
+- Source model to rebuild (read only):
+  D:\Rum website\ctyanduong\ctyanduong\models\source\<tên>.glb
+- Screenshot of how it looks on the website now (read only; none yet for chi-tiet-*):
+  D:\Rum website\ctyanduong\ctyanduong\models\reference\<tên>.png
+- Real ADDC photos to match materials and the site look (read only):
+  <paths from the "Ảnh thật" column; delete this line if the model has none>
+- Save the finished model as:
+  D:\Rum website\ctyanduong\ctyanduong\models\<tên>.glb
+  (same file name as the source, directly in the models folder, not in models\source).
+- Never modify, move or delete anything in models\source, models\reference, img, js, css
+  or any .html file.
+```
 
 Lời nhắc viết bằng tiếng Anh vì công cụ 3D hiểu tiếng Anh tốt nhất.
 
@@ -78,6 +99,7 @@ HOW THE WEBSITE SHOWS IT (so it holds up)
   hold up from every side and at close range, including the underside a camera can see.
 
 OUTPUT
+- Save to the path given in FILES, writing only that one file.
 - One .glb (glTF 2.0 binary), all textures embedded as JPEG (PNG only where alpha is needed).
 - No Draco, no Meshopt, no KTX2 compression (the site's loader does not decode them).
 - Budget per single object: under 80k triangles and 8 MB. Rooms, houses and construction stages:
@@ -93,14 +115,14 @@ Mỗi mẫu đứng một mình trong khung xem, khách xoay và phóng to. Đâ
 
 | Tệp xuất ra | Ảnh thật | Lời nhắc riêng |
 |---|---|---|
-| `be-tong.glb` | `img/fb/log/` (ảnh đổ bê tông) | `Cast-in-place reinforced concrete column stub, 40 x 40 x 120 cm, freshly stripped from plywood formwork. Light grey Portland concrete (#9C9A94 to #B4B1AA) with faint horizontal plywood seams every 30 cm and the imprint of plywood grain, scattered tiny air pores (bugholes, 1 to 4 mm) concentrated near the top, a slightly darker damp band 15 cm high at the base, a thin grey cement slurry run on one face, crisp 5 mm chamfered edges with two small chips. Four D20 ribbed steel starter bars protrude 50 cm from the top: dark blue-grey mill scale, patchy orange-brown surface rust, rust streaks staining the concrete top below each bar, helical and longitudinal ribs modelled in geometry. Beside it: a 15 cm concrete test cube with a hand-written-looking chalk mark (no readable text) and slightly rough sides.` |
-| `thep.glb` | `img/fb/log/` (ảnh buộc thép) | `Bundle of seven D20 deformed steel reinforcing bars, 3 m long, lying horizontally on two rough-sawn tropical hardwood chocks. Bars not perfectly parallel, very slight sag between supports, cut ends showing bright shear faces with a burr. Steel: dark blue-grey mill scale with flaking patches, orange-brown rust stronger on the upper faces, ribs (crescent pattern plus two longitudinal ribs) in real geometry. Three ties of twisted black annealed wire with the twisted tails sticking out, three square stirrups (D8) hanging loosely. Chocks have soil marks, splits and rust drips from the bars.` |
-| `gach.glb` | `img/fb/log/` (ảnh xây tường) | `Short wall of Vietnamese fired clay hollow bricks ("gach ong", 8 x 8 x 18 cm, four square holes running lengthwise), running bond, 5 bricks wide, 6 courses high. Every brick slightly different: orange-red #B5552F to burnt red #8E3B22, darker scorch marks, rough fired skin with small pits and chips, a few hairline cracks. 1 cm grey cement-sand mortar joints (#8F8B84), recessed 3 mm, squeezed out unevenly on the back face, gritty texture with sand grains. The four square holes are clearly visible and dark inside on the end bricks. A little mortar splatter on the bottom course.` |
-| `da.glb` | `img/materials/da-marble.jpg` | `Natural stone samples. Front: polished white Carrara-type marble slab 190 x 110 x 2 cm, soft grey veins with faint warm gold, mirror-like clearcoat with soft reflections, 2 mm chamfer on the sawn edges showing the slightly translucent stone, standing on a low oiled walnut plinth. Behind, leaning at about 60 degrees: polished black-and-grey speckled granite slab with mica sparkle (subtle), same thickness, honed edge. A small felt pad under each slab corner.` |
+| `be-tong.glb` | `D:\Rum website\ctyanduong\ctyanduong\img\fb\log\15.jpg`, `D:\Rum website\ctyanduong\ctyanduong\img\fb\log\18.jpg`, `D:\Rum website\ctyanduong\ctyanduong\img\fb\log\21.jpg` | `Cast-in-place reinforced concrete column stub, 40 x 40 x 120 cm, freshly stripped from plywood formwork. Light grey Portland concrete (#9C9A94 to #B4B1AA) with faint horizontal plywood seams every 30 cm and the imprint of plywood grain, scattered tiny air pores (bugholes, 1 to 4 mm) concentrated near the top, a slightly darker damp band 15 cm high at the base, a thin grey cement slurry run on one face, crisp 5 mm chamfered edges with two small chips. Four D20 ribbed steel starter bars protrude 50 cm from the top: dark blue-grey mill scale, patchy orange-brown surface rust, rust streaks staining the concrete top below each bar, helical and longitudinal ribs modelled in geometry. Beside it: a 15 cm concrete test cube with a hand-written-looking chalk mark (no readable text) and slightly rough sides.` |
+| `thep.glb` | `D:\Rum website\ctyanduong\ctyanduong\img\fb\log\04.jpg` | `Bundle of seven D20 deformed steel reinforcing bars, 3 m long, lying horizontally on two rough-sawn tropical hardwood chocks. Bars not perfectly parallel, very slight sag between supports, cut ends showing bright shear faces with a burr. Steel: dark blue-grey mill scale with flaking patches, orange-brown rust stronger on the upper faces, ribs (crescent pattern plus two longitudinal ribs) in real geometry. Three ties of twisted black annealed wire with the twisted tails sticking out, three square stirrups (D8) hanging loosely. Chocks have soil marks, splits and rust drips from the bars.` |
+| `gach.glb` | `D:\Rum website\ctyanduong\ctyanduong\img\fb\mia\`, `D:\Rum website\ctyanduong\ctyanduong\img\fb\daugiay\` (ảnh có tường gạch đang xây) | `Short wall of Vietnamese fired clay hollow bricks ("gach ong", 8 x 8 x 18 cm, four square holes running lengthwise), running bond, 5 bricks wide, 6 courses high. Every brick slightly different: orange-red #B5552F to burnt red #8E3B22, darker scorch marks, rough fired skin with small pits and chips, a few hairline cracks. 1 cm grey cement-sand mortar joints (#8F8B84), recessed 3 mm, squeezed out unevenly on the back face, gritty texture with sand grains. The four square holes are clearly visible and dark inside on the end bricks. A little mortar splatter on the bottom course.` |
+| `da.glb` | `D:\Rum website\ctyanduong\ctyanduong\img\materials\da-marble.jpg` | `Natural stone samples. Front: polished white Carrara-type marble slab 190 x 110 x 2 cm, soft grey veins with faint warm gold, mirror-like clearcoat with soft reflections, 2 mm chamfer on the sawn edges showing the slightly translucent stone, standing on a low oiled walnut plinth. Behind, leaning at about 60 degrees: polished black-and-grey speckled granite slab with mica sparkle (subtle), same thickness, honed edge. A small felt pad under each slab corner.` |
 | `gach-op.glb` | không | `Floor tiling sample: three 60 x 60 x 1 cm matte porcelain tiles in warm beige-grey (#C9C0B0) with subtle stone speckle and slight shade variation between tiles, laid on a 5 cm grey cement mortar bed whose edges are rough and crumbly, 3 mm grey grout lines slightly below the tile face, four white cross-shaped plastic tile spacers still in place. A fourth tile lifted and leaning on one corner, showing its unglazed ribbed back in pale clay with a printed-style grid pattern (no text) and mortar comb lines stuck to it.` |
-| `kinh.glb` | `img/fb/` (ảnh mặt tiền kính các công trình) | `Aluminium window, 150 x 200 cm, two panes with a centre mullion. Slim system profile in dark grey satin powder coat (#3A3C3E) with real extruded profile shape, visible mitred corner joints and drainage slots on the bottom rail, black EPDM rubber gaskets at the glass edge. 10 mm clear tempered glass with physically correct transmission, slight green tint visible on the glass edges, crisp reflections. A small light grey concrete block stands 40 cm behind the window so the transparency reads. A tiny factory sticker area left blank (no text).` |
-| `go.glb` | `img/materials/go.webp` | `Interior timber samples stacked loosely. A solid white oak plank 230 x 34 x 3 cm, straight grain with ray flecks, satin oil finish with soft sheen. A walnut plank of the same size, chocolate heartwood with lighter sapwood streak on one edge. An 18 mm moisture-resistant MDF board with green core visible on the cut edge, white matte laminate face and 1 mm oak edge banding. A 24 x 24 cm oak beam lying diagonally across the front, with visible end grain, growth rings and a small check (crack) on the end. Every cut end shows true end grain, not plank texture.` |
-| `terrazzo.glb` | `img/materials/` | `Two finish samples on the floor. 1) Terrazzo: a 180 x 110 x 3 cm slab lying flat and a 120 x 70 cm slab tilted up behind it; polished cast terrazzo, warm off-white cement ground (#E8E2D4), irregular angular chips of white and grey marble, sage green, terracotta and small black stone, 2 to 12 mm, chip density natural and uneven, honed satin finish with soft reflections, chips visible in section on the cut edges. 2) Vietnamese encaustic cement tiles ("gach bong"), 20 x 20 x 1.5 cm: four tiles laid in a square, one lifted at an angle; matte cement face with a four-petal pattern in deep green (#2F4A39), a terracotta centre dot and mustard-yellow quarter circles in the corners, colours slightly soft and pigment-like, worn corners, grey cement body visible on the edges.` |
+| `kinh.glb` | `D:\Rum website\ctyanduong\ctyanduong\img\fb\nhapho2022\`, `D:\Rum website\ctyanduong\ctyanduong\img\fb\log\12.jpg` | `Aluminium window, 150 x 200 cm, two panes with a centre mullion. Slim system profile in dark grey satin powder coat (#3A3C3E) with real extruded profile shape, visible mitred corner joints and drainage slots on the bottom rail, black EPDM rubber gaskets at the glass edge. 10 mm clear tempered glass with physically correct transmission, slight green tint visible on the glass edges, crisp reflections. A small light grey concrete block stands 40 cm behind the window so the transparency reads. A tiny factory sticker area left blank (no text).` |
+| `go.glb` | `D:\Rum website\ctyanduong\ctyanduong\img\materials\go.webp` | `Interior timber samples stacked loosely. A solid white oak plank 230 x 34 x 3 cm, straight grain with ray flecks, satin oil finish with soft sheen. A walnut plank of the same size, chocolate heartwood with lighter sapwood streak on one edge. An 18 mm moisture-resistant MDF board with green core visible on the cut edge, white matte laminate face and 1 mm oak edge banding. A 24 x 24 cm oak beam lying diagonally across the front, with visible end grain, growth rings and a small check (crack) on the end. Every cut end shows true end grain, not plank texture.` |
+| `terrazzo.glb` | `D:\Rum website\ctyanduong\ctyanduong\img\materials\` | `Two finish samples on the floor. 1) Terrazzo: a 180 x 110 x 3 cm slab lying flat and a 120 x 70 cm slab tilted up behind it; polished cast terrazzo, warm off-white cement ground (#E8E2D4), irregular angular chips of white and grey marble, sage green, terracotta and small black stone, 2 to 12 mm, chip density natural and uneven, honed satin finish with soft reflections, chips visible in section on the cut edges. 2) Vietnamese encaustic cement tiles ("gach bong"), 20 x 20 x 1.5 cm: four tiles laid in a square, one lifted at an angle; matte cement face with a four-petal pattern in deep green (#2F4A39), a terracotta centre dot and mustard-yellow quarter circles in the corners, colours slightly soft and pigment-like, worn corners, grey cement body visible on the edges.` |
 
 ---
 
@@ -143,7 +165,7 @@ photograph from a high-end furniture maker's catalogue: real joinery, real uphol
 
 | Tệp xuất ra | Ảnh thật | Lời nhắc riêng |
 |---|---|---|
-| `house.glb` | `img/fb/nhapho2022/`, `img/fb/q3-4t/` | `Modern three-storey Vietnamese townhouse (nha pho), 7.2 m wide x 10 m deep, 3.3 m floor-to-floor; keep the exact massing of the attached model. Reinforced concrete frame with smooth off-white painted render over brick (#EDE9E0), the render showing very subtle trowel waves, slight rain staining under sills and at the parapet top, and faint dirt at the ground line. Flat roof with a 0.95 m parapet and a metal coping, a stair tower at the back left with a slightly sloped concrete lid, a dark aluminium pergola over the front of the roof terrace with real profile sections. Front: ground floor walnut-veneer entrance door with a brass pull and a full-height glass shopfront in slim dark frames; upper floors full-width clear glazing set back behind frameless glass balcony balustrades with thin aluminium top rails and stainless spigots; a vertical oak timber screen on the right edge, battens 4 x 8 cm with 4 cm gaps. The glass shows reflections and, behind it, a simple furnished interior (curtains, a sofa, ceiling lights) so it never looks empty or black. Small front yard: real grass with variation, a low rendered fence wall with a coping, a dark aluminium sliding gate, three tropical trees (frangipani or areca palm) with real leaf cards and bark. Rain gutters and downpipes, AC condenser units on a side wall, a house-number plate (no text). Daytime, warm interior lights subtly on.` |
+| `house.glb` | `D:\Rum website\ctyanduong\ctyanduong\img\fb\nhapho2022\`, `D:\Rum website\ctyanduong\ctyanduong\img\fb\q3-4t\` | `Modern three-storey Vietnamese townhouse (nha pho), 7.2 m wide x 10 m deep, 3.3 m floor-to-floor; keep the exact massing of the attached model. Reinforced concrete frame with smooth off-white painted render over brick (#EDE9E0), the render showing very subtle trowel waves, slight rain staining under sills and at the parapet top, and faint dirt at the ground line. Flat roof with a 0.95 m parapet and a metal coping, a stair tower at the back left with a slightly sloped concrete lid, a dark aluminium pergola over the front of the roof terrace with real profile sections. Front: ground floor walnut-veneer entrance door with a brass pull and a full-height glass shopfront in slim dark frames; upper floors full-width clear glazing set back behind frameless glass balcony balustrades with thin aluminium top rails and stainless spigots; a vertical oak timber screen on the right edge, battens 4 x 8 cm with 4 cm gaps. The glass shows reflections and, behind it, a simple furnished interior (curtains, a sofa, ceiling lights) so it never looks empty or black. Small front yard: real grass with variation, a low rendered fence wall with a coping, a dark aluminium sliding gate, three tropical trees (frangipani or areca palm) with real leaf cards and bark. Rain gutters and downpipes, AC condenser units on a side wall, a house-number plate (no text). Daytime, warm interior lights subtly on.` |
 
 **Quan trọng cho ngôi nhà:** đặt tên vật liệu lớp sơn ngoài là `Render` để nút "Màu mặt tiền" trên trang Kiến trúc vẫn đổi được màu. Cảnh "bản vẽ" trên trang Kiến trúc vẽ nét theo cạnh của mô hình, nên các mảng lớn (tường, sàn, kính) nên là mặt phẳng gọn, không nhăn.
 
@@ -153,7 +175,13 @@ photograph from a high-end furniture maker's catalogue: real joinery, real uphol
 
 **Quan trọng:** cả bảy tệp phải cùng gốc toạ độ, cùng tỉ lệ, cùng vị trí như tệp gốc, chỉ khác những gì đã được xây. Nếu lệch, ngôi nhà sẽ "nhảy" khi chuyển giai đoạn. Làm `phase-6.glb` trước (nhà hoàn thiện), rồi bóc dần ngược về `phase-0.glb`, để các chi tiết trùng khớp tuyệt đối.
 
-Ảnh thật cho cả bảy giai đoạn: `img/equipment/ep-coc.jpg` (máy ép cọc), `img/equipment/gian-giao.jpg` (giàn giáo, lưới xanh), `img/equipment/chong-tang.jpg` (cây chống), `img/equipment/cu-vay.jpg`, `img/equipment/xe-cuoc.jpg`, và nhật ký công trường `img/fb/log/01.jpg` đến `10.jpg`.
+Ảnh thật cho cả bảy giai đoạn (ảnh công trình của ADDC):
+- Ép cọc: `D:\Rum website\ctyanduong\ctyanduong\img\fb\log\13.jpg`, `D:\Rum website\ctyanduong\ctyanduong\img\fb\log\19.jpg`, `D:\Rum website\ctyanduong\ctyanduong\img\equipment\ep-coc.jpg`
+- Móng, đổ bê tông sàn: `D:\Rum website\ctyanduong\ctyanduong\img\fb\daugiay\03.jpg`, `D:\Rum website\ctyanduong\ctyanduong\img\fb\log\15.jpg`, `D:\Rum website\ctyanduong\ctyanduong\img\fb\log\21.jpg`
+- Cốt thép trước khi đổ: `D:\Rum website\ctyanduong\ctyanduong\img\fb\log\04.jpg`
+- Khung bê tông, sàn mái: `D:\Rum website\ctyanduong\ctyanduong\img\fb\mia\03.jpg`, `D:\Rum website\ctyanduong\ctyanduong\img\fb\log\02.jpg`
+- Giàn giáo lưới xanh, cây chống, thiết bị: `D:\Rum website\ctyanduong\ctyanduong\img\equipment\gian-giao.jpg`, `D:\Rum website\ctyanduong\ctyanduong\img\equipment\chong-tang.jpg`, `D:\Rum website\ctyanduong\ctyanduong\img\equipment\cu-vay.jpg`, `D:\Rum website\ctyanduong\ctyanduong\img\equipment\xe-cuoc.jpg`
+- Nhà hoàn thiện, bàn giao: `D:\Rum website\ctyanduong\ctyanduong\img\fb\nhapho2022\`, `D:\Rum website\ctyanduong\ctyanduong\img\fb\log\12.jpg`
 
 Dán lời nhắc nhóm này (thay N) sau lời nhắc chung:
 
@@ -211,9 +239,9 @@ normal and roughness maps, not in the base colour.
 
 ## 7. Chi tiết kết cấu (trang Thi công, mục chi tiết: móng cọc, lồng thép cột, dầm sàn, tường xây, chống thấm)
 
-Năm mô hình này mới có tệp gốc (`models/source/chi-tiet-*.glb`, chưa có ảnh `.png`). Trên web, chúng **dựng lên từng bước**: mỗi bộ phận trong tệp gốc có tên `step<N>_<số>` (N là bước). Bản raea **phải giữ đúng tên và đúng chia bước** này, nếu không web không dựng từng bước được.
+Năm mô hình này mới có tệp gốc (`D:\Rum website\ctyanduong\ctyanduong\models\source\chi-tiet-*.glb`, chưa có ảnh `.png`). Trên web, chúng **dựng lên từng bước**: mỗi bộ phận trong tệp gốc có tên `step<N>_<số>` (N là bước). Bản raea **phải giữ đúng tên và đúng chia bước** này, nếu không web không dựng từng bước được.
 
-Ảnh thật: `img/fb/log/01.jpg` đến `10.jpg`, `img/equipment/chong-tang.jpg`.
+Ảnh thật: móng cọc `D:\Rum website\ctyanduong\ctyanduong\img\fb\log\13.jpg`, `D:\Rum website\ctyanduong\ctyanduong\img\fb\log\19.jpg`; cốt thép cột, dầm sàn `D:\Rum website\ctyanduong\ctyanduong\img\fb\log\04.jpg`, `D:\Rum website\ctyanduong\ctyanduong\img\fb\log\15.jpg`, `D:\Rum website\ctyanduong\ctyanduong\img\equipment\chong-tang.jpg`; tường gạch `D:\Rum website\ctyanduong\ctyanduong\img\fb\mia\`, `D:\Rum website\ctyanduong\ctyanduong\img\fb\daugiay\`.
 
 Dán lời nhắc nhóm này sau lời nhắc chung:
 
@@ -241,7 +269,7 @@ crossings, concrete spacer blocks, plywood formwork with nail heads and concrete
 
 ## 8. Đưa mô hình mới vào website
 
-1. Lưu các tệp raea xuất ra vào thư mục `models/` (ví dụ `models/be-tong.glb`, `models/noi-that-sofa.glb`, `models/phase-0.glb`).
+1. Lưu các tệp raea xuất ra vào thư mục `D:\Rum website\ctyanduong\ctyanduong\models\` (ví dụ `D:\Rum website\ctyanduong\ctyanduong\models\be-tong.glb`, `D:\Rum website\ctyanduong\ctyanduong\models\noi-that-sofa.glb`, `D:\Rum website\ctyanduong\ctyanduong\models\phase-0.glb`).
 2. Mở `js/scene3d.js`, điền đường dẫn vào khối `MODELS` ở đầu tệp:
 
 ```js
