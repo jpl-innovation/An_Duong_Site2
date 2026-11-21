@@ -1,7 +1,7 @@
-import { createModelLoader } from './addc-loader.js';
-import { prepareModel, installFade, framePacer } from './addc-polish.js';
-import { installStageOrbit } from './addc-orbit.js';
-import { assembleHouse, createPhasePlayer, mountedModel } from './addc-motion.js';
+import { createModelLoader, preloadModels, downloaded } from './addc-loader.js?v=20261121b';
+import { prepareModel, installFade } from './addc-polish.js?v=20261121b';
+import { installStageOrbit } from './addc-orbit.js?v=20261121b';
+import { assembleHouse, createPhasePlayer, mountedModel } from './addc-motion.js?v=20261121b';
 /* ADDC 3D: procedural models, built from code so the site works today.
    When realistic GLB files are ready (see 3D-PROMPTS.md), put them in models/ and fill in MODELS below.
    An empty string keeps the procedural model. One WebGL renderer per page, paused while off-screen. */
@@ -291,6 +291,31 @@ const loader = new GLTFLoader();
 const { load: rawLoadGLB, prioritize: prioritizeModel } = createModelLoader(loader);
 const loadGLB = (url, opts) => rawLoadGLB(url, opts).then(prepareModel);
 
+/* A newly loaded model's textures go to the graphics card a few at a time, a few milliseconds per frame, and its
+   shaders are compiled in parallel, all before it is first drawn. Uploading a hundred textures in the one frame a
+   model appeared froze the scroll for up to a quarter of a second. */
+const gpuJobs = [];
+let pumping = false;
+function pump() {
+  const end = performance.now() + 3;
+  do { const job = gpuJobs.shift(); if (job) job(); } while (gpuJobs.length && performance.now() < end);
+  if (gpuJobs.length) requestAnimationFrame(pump); else pumping = false;
+}
+function warmModel(st, model) {
+  const textures = new Set();
+  model.traverse(o => {
+    if (o.isMesh) [].concat(o.material).forEach(m => { if (m) for (const k in m) { const v = m[k]; if (v && v.isTexture) textures.add(v); } });
+  });
+  return new Promise(resolve => {
+    textures.forEach(t => gpuJobs.push(() => { try { st.renderer.initTexture(t); } catch (e) {} }));
+    gpuJobs.push(() => {
+      const compiled = st.renderer.compileAsync ? st.renderer.compileAsync(model, st.camera, st.scene) : Promise.resolve();
+      compiled.catch(() => {}).then(() => resolve(model));
+    });
+    if (!pumping) { pumping = true; requestAnimationFrame(pump); }
+  });
+}
+
 /* ---------- Stage: renderer, camera, light, render-on-visible ---------- */
 // Heavy one-off work (building a model, compiling its shaders) waits for a pause in scrolling, so it never
 // lands in the middle of a scroll. A stage that is about to be seen is still built at once by the lazy observer.
@@ -353,10 +378,8 @@ function makeStage(el, { paper = false, cam = [4, 3, 5], target = [0, .8, 0], au
 
   const ticks = [];
   const clock = new THREE.Clock();
-  // The model is drawn at most 60 times a second; on 120 and 240 Hz screens the page itself keeps the full rate.
-  const pace = framePacer();
-  const tick = now => {
-    if (!pace(now)) return;
+  // Drawn every frame, so a model tied to the scroll moves exactly with the page on 120 and 240 Hz screens too.
+  const tick = () => {
     const dt = Math.min(clock.getDelta(), .05);
     ticks.forEach(f => f(dt));
     controls.update();
@@ -386,7 +409,21 @@ function makeStage(el, { paper = false, cam = [4, 3, 5], target = [0, .8, 0], au
   }), 600);
 
   const fade = installFade(el, renderer, scene, camera);
-  return { renderer, scene, camera, controls, orbitView, fade, sun, hemi, catcher, ticks, ready: () => el.classList.add('ready') };
+  const st = { renderer, scene, camera, controls, orbitView, fade, sun, hemi, catcher, ticks, ready: () => { el.classList.add('ready'); warmModel(st, scene); } };
+  // Every model a stage asks for is counted for its loading screen and warmed on the graphics card before it is shown.
+  const urls = [];
+  st.load = (url, opts) => { urls.push(url); return loadGLB(url, opts).then(m => warmModel(st, m)); };
+  const status = el.querySelector('.stage-status');
+  const pct = status && status.querySelector('[data-pct]');
+  if (pct) {
+    const show = () => {
+      if (el.classList.contains('ready') || !el.isConnected) return;
+      pct.textContent = String(Math.round((urls.length ? downloaded(urls) : 0) * 100)).padStart(2, '0');
+      setTimeout(show, 120);
+    };
+    show();
+  }
+  return st;
 }
 function fail(el, msg) {
   el.classList.add('failed');
@@ -768,7 +805,7 @@ async function initDetails(el) {
   const buildDetail = async id => {
     const original = DETAILS[id](M);
     try {
-      const model = await loadGLB(MODELS.details[id]);
+      const model = await st.load(MODELS.details[id]);
       const parts = [];
       [...model.children].forEach(obj => {
         const match = /^step(\d+)_(\d+)$/.exec(obj.name);
@@ -843,7 +880,7 @@ async function initCatalog(el, { builders, attr, info, specSel, size = 2.4, cam 
   const build = id => {
     if (!MODELS[id]) return wrapModel(builders[id](M));
     if (!cache[id]) {
-      cache[id] = loadGLB(MODELS[id]).then(wrapModel).catch(error => {
+      cache[id] = st.load(MODELS[id]).then(wrapModel).catch(error => {
         delete cache[id];
         console.warn('Using procedural catalogue model', id, error);
         return wrapModel(builders[id](M));
@@ -1045,7 +1082,7 @@ async function initBuild(el) {
   const PH = window.ADDC_PHASES || [];
   const N = PH.length || 7;
   let house;
-  const phases = createPhasePlayer(st.scene, MODELS.phases, loadGLB, prioritizeModel);
+  const phases = createPhasePlayer(st.scene, MODELS.phases, st.load, prioritizeModel);
   const first = await phases.first;
   if (!first && !(await phases.loaded).some(Boolean)) {
     house = buildHouse(M);
@@ -1130,7 +1167,7 @@ async function initBlueprint(el) {
   if (!st) return;
   const M = makeMats();
   let house, glb = null;
-  if (MODELS.house) { try { glb = fitTo(await loadGLB(MODELS.house), 14); } catch (e) { console.warn('GLB lỗi', e); } }
+  if (MODELS.house) { try { glb = fitTo(await st.load(MODELS.house), 14); } catch (e) { console.warn('GLB lỗi', e); } }
   if (glb) st.scene.add(glb);
   else { house = buildHouse(M); st.scene.add(house.group); }
 
@@ -1270,7 +1307,7 @@ async function initRoom(el) {
   });
   photo('img/materials/da-marble.jpg', 2, M.marbleFloor);
   const R = buildRoom(M);
-  const extras = loadGLB(MODELS.extras).catch(e => { console.warn('ADDC room props unavailable', e); return null; });
+  const extras = st.load(MODELS.extras).catch(e => { console.warn('ADDC room props unavailable', e); return null; });
   let roomFloor, roomWalls, backShell = [], sideShell = [];
   const roomWood = new Map(), roomFabric = new Set();
   const registerFinishes = model => model.traverse(obj => {
@@ -1283,7 +1320,7 @@ async function initRoom(el) {
     });
   });
   try {
-    const model = await loadGLB(MODELS.room);
+    const model = await st.load(MODELS.room);
     const objects = model.children.slice();
     const named = name => objects.find(obj => obj.name === name);
     const floor = named('Floor');
@@ -1412,7 +1449,7 @@ async function initRoom(el) {
   });
   presets.forEach(async ([group, original, id]) => {
     try {
-      const model = await loadGLB(MODELS[id]);
+      const model = await st.load(MODELS[id]);
       registerFinishes(model);
       const { x, y, z } = original.position;
       group.add(mountedModel(model, { x, y, z, angle: original.rotation.y }));
@@ -1495,7 +1532,7 @@ async function initJourney(el) {
   const M = makeMats();
   const house = buildHouse(M);
   st.scene.add(house.group);
-  const phases = createPhasePlayer(st.scene, MODELS.phases, loadGLB, prioritizeModel);
+  const phases = createPhasePlayer(st.scene, MODELS.phases, st.load, prioritizeModel);
   st.sun.position.set(10, 18, 12);
   st.scene.background = null;
 
@@ -1521,7 +1558,7 @@ async function initJourney(el) {
   XS.forEach(x => ZS.forEach(z => { const s = mesh(new THREE.CylinderGeometry(.04, .04, .7, 8), M.pressRed, x, .35, z); stakes.add(s); }));
   const outline = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints([[-W / 2, D / 2], [W / 2, D / 2], [W / 2, -D / 2], [-W / 2, -D / 2]].map(([x, z]) => new THREE.Vector3(x, .05, z))), new THREE.LineBasicMaterial({ color: '#e9a47f', transparent: true }));
   stakes.add(outline); st.scene.add(stakes);
-  const survey = loadGLB(MODELS.extras).then(extras => {
+  const survey = st.load(MODELS.extras).then(extras => {
     const stake = extras.getObjectByName('SurveyStake');
     if (!stake) return;
     stakes.clear();
@@ -1557,7 +1594,7 @@ async function initJourney(el) {
   rebuiltRoom.name = 'ADDC rebuilt walkthrough interior';
   rebuiltRoom.visible = false;
   st.scene.add(rebuiltRoom);
-  loadGLB(MODELS.room).then(async model => {
+  st.load(MODELS.room).then(async model => {
     const decor = model.children.filter(obj => /^(Sofa_|CoffeeTable|Book$|Vase$|PlantPot$|Fig|Pendant|ArtFrame$|Artwork$|Rug$)/.test(obj.name));
     if (!decor.length) return;
     const living = new THREE.Group();
@@ -1577,7 +1614,7 @@ async function initJourney(el) {
       ['tu-ao', { x: 3.25, y: L0, z: -2.6, angle: -Math.PI / 2 }],
     ];
     await Promise.all(furnishings.map(async ([id, placement]) => {
-      try { rebuiltRoom.add(mountedModel(await loadGLB(MODELS[id]), placement)); }
+      try { rebuiltRoom.add(mountedModel(await st.load(MODELS[id]), placement)); }
       catch (e) { console.warn('ADDC walkthrough furniture unavailable', id, e); }
     }));
   }).catch(e => console.warn('ADDC walkthrough interior unavailable', e));
@@ -1645,12 +1682,27 @@ const build = el => {
   if (built.has(el)) return;
   built.add(el); lazy.unobserve(el);
   const f = boot[el.dataset['3d']];
-  const lbl = el.querySelector('.stage-status span'); if (lbl) lbl.textContent = 'Đang dựng mô hình';
-  if (f) f(el).catch(err => { console.error(err); fail(el, 'Không dựng được mô hình 3D trên thiết bị này.'); });
+  const lbl = el.querySelector('.bm-stage-say'); if (lbl && lbl.firstChild) lbl.firstChild.textContent = 'Đang dựng mô hình ';
+  // The home loader waits for this before lifting, so the stage setup happens behind it.
+  if (f) f(el).then(() => document.dispatchEvent(new Event('addc:stage-built')))
+    .catch(err => { console.error(err); fail(el, 'Không dựng được mô hình 3D trên thiết bị này.'); document.dispatchEvent(new Event('addc:stage-built')); });
 };
-const lazy = new IntersectionObserver(entries => entries.forEach(e => e.isIntersecting && build(e.target)), { rootMargin: '800px 0px' });
+const lazy = new IntersectionObserver(entries => entries.forEach(e => e.isIntersecting && build(e.target)), { rootMargin: '1600px 0px' });
 const stages = [...document.querySelectorAll('[data-3d]')];
 stages.forEach(el => lazy.observe(el));
+// Every model this page shows is downloaded in the background from the start, nearest stage first, so it is already on
+// the machine when the visitor scrolls to it. Downloading never blocks the page; only parsing does, and that waits.
+const STAGE_MODELS = {
+  journey: () => [...MODELS.phases, MODELS.room, MODELS.extras, MODELS['ban-an'], MODELS['tu-ao']],
+  build: () => MODELS.phases,
+  blueprint: () => [MODELS.house],
+  details: () => Object.values(MODELS.details || {}),
+  materials: () => ['be-tong', 'thep', 'gach', 'da', 'go', 'gach-op', 'kinh', 'terrazzo'].map(k => MODELS[k]),
+  furniture: () => ['sofa', 'ban-tra', 'ban-an', 'ghe-an', 'tu-bep', 'giuong', 'tu-ao', 'ban-lam-viec', 'ke-sach'].map(k => MODELS[k]),
+  room: () => [MODELS.room, MODELS.extras, MODELS.giuong, MODELS['tu-ao'], MODELS['ban-lam-viec'], MODELS['ke-sach']]
+};
+const saveData = navigator.connection && (navigator.connection.saveData || /2g/.test(navigator.connection.effectiveType || ''));
+if (!saveData) preloadModels(stages.flatMap(el => (STAGE_MODELS[el.dataset['3d']] || (() => []))()));
 // Every stage is built as soon as this module arrives, while the visitor is still on the first screen
 // (on the home page the module itself is only fetched after the intro, at an idle moment).
 // Building later meant shader compiles landing in the middle of a scroll.

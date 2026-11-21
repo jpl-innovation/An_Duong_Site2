@@ -1,0 +1,26 @@
+ADDC WEBSITE: THE GOAL FOR ANY WORK ON THE SITE ITSELF (read before changing pages, motion or 3D wiring)
+
+Site folder: D:\Rum website\ctyanduong\ctyanduong (branch v2; live at jpl-innovation.github.io/An_Duong_Site2).
+
+The owner's benchmark is these award-winning sites. Study them before designing anything:
+- https://www.maman-corp.com/ : the best for creativity and smoothness. Logo-led loader with a real 0-100 count,
+  a panel lifting to reveal a full-screen photo, eased motion everywhere, nothing jumps or flashes.
+- https://endcap.design/ : headlines rising line by line out of a mask; confident, restrained motion.
+- https://www.skanska.com/us/en : sideways image strips driven by the vertical scroll.
+- https://www.mccarthy.com/ : an impressive first screen.
+- https://suffolk.com/ : the "how we build" section.
+- Also: turnerconstruction.com, citadelgroup.org, bpmarineconstruction.com, havenconstructions.com.au,
+  montarville.ca, rapidkert.com.
+
+Non-negotiables:
+1. Smooth: no frame longer than 50 ms while scrolling on a 240 Hz screen; 3D drawn every frame, never capped at 60.
+   Models are downloaded ahead (preloadModels), parsed one per frame, and their textures uploaded a few per frame
+   (warmModel in js/scene3d.js) before they are first shown. Never add work to the frame a model appears in.
+2. No flashes: pictures start loading two screens ahead; picture frames wait in a dark tone, never a pale card.
+3. Loading screens use the ADDC house mark (brandMark in js/app.js): house lines, the logo square rising with real
+   progress, the wordmark sliding out of the wall. Counts are real, never a timer pretending to load.
+4. Creative but clean: avoid the 20 AI-slop signs (tags and pills, eyebrows, ALL CAPS subtitles, section numbering,
+   gradient backgrounds, bordered cards, excessive mono or italics, periods in titles, and the rest).
+5. Real ADDC work photos only; no family photos.
+6. Check everything before it goes live: every page at 2460 px and 390 px, frame timing, console errors.
+7. Commits carry no Claude or AI co-author or session lines: all credit goes to the owner of this repository.

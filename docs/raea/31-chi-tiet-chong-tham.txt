@@ -59,6 +59,19 @@ MAKE IT REAL: MATERIALS (glTF 2.0 PBR metallic-roughness)
   metallic 1 roughness 0.25 to 0.35, powder-coated aluminium roughness 0.45, glass transmission 1
   roughness 0.02 ior 1.52, woven fabric roughness 0.85 to 0.95 with sheen.
 
+THE BAR TO BEAT (award-winning sites the owner chose as the goal)
+- maman-corp.com: the smoothest and most creative of them. A logo-led loading screen with a real
+  0-100 count, a panel that lifts to reveal a full-screen photo, every movement eased, nothing jumps.
+- endcap.design: headlines that rise line by line out of a mask; restrained, confident motion.
+- skanska.com: image strips that scroll sideways as you scroll down.
+- mccarthy.com: an impressive first screen. suffolk.com: a clear "how we build" sequence.
+- Also turnerconstruction.com, citadelgroup.org, bpmarineconstruction.com, havenconstructions.com.au,
+  montarville.ca, rapidkert.com.
+The 3D on ADDC's site sits beside work of that standard, so every model must read as a real object
+photographed for a premium architecture firm, and must load and move without a single stutter: keep
+meshes few (merge parts that never move separately), textures shared across files where they repeat,
+and file sizes inside the budget below.
+
 HOW THE WEBSITE SHOWS IT (so it holds up)
 - Rendered live in Three.js r160 with ACES filmic tone mapping, a neutral studio environment map
   and one warm soft sun with soft shadows. Background is either deep moss green (#22392B) or warm

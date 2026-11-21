@@ -64,7 +64,7 @@ assert len(models) == 31, len(models)
 
 os.makedirs(OUT, exist_ok=True)
 for f in os.listdir(OUT):
-    if f.endswith('.txt'): os.remove(os.path.join(OUT, f))
+    if f.endswith('.txt') and not f.startswith('00-'): os.remove(os.path.join(OUT, f))  # 00-site-goals.txt is kept
 for i, (n, ph, group, p) in enumerate(models, 1):
     ref = os.path.join(ROOT, 'models', 'reference', n + '.png')
     lines = ['MODEL %d OF 31: %s' % (i, n), '', 'FILES (read and write directly on this computer)',

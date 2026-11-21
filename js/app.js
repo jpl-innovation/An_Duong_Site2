@@ -180,31 +180,72 @@ const fmt = n => new Intl.NumberFormat('vi-VN').format(Math.round(n));
 const pad2 = n => String(n).padStart(2, '0');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/* ---------- Brand mark: a house drawn in line that becomes the ADDC logo ---------- */
+// The ADDC square of the logo is the house's walls: the walls and roof are drawn first, the square then fills from the
+// ground up as the page really loads (the building rising), and at the end the wordmark slides out of the wall.
+let markN = 0;
+function brandMark(full) {
+  const n = ++markN;
+  return `<svg class="bm${full ? ' bm-full' : ''}" viewBox="${full ? '-70 0 1340 600' : '-60 40 446 540'}" aria-hidden="true">
+<defs><clipPath id="bmr${n}"><rect class="bm-rise" x="0" y="555" width="326" height="0"/></clipPath>${full ? `<clipPath id="bmw${n}"><rect x="338" y="0" width="900" height="600"/></clipPath>` : ''}</defs>
+<g class="bm-lock"><path class="bm-line bm-ground" pathLength="1" d="M-46 556H372"/><path class="bm-line bm-walls" pathLength="1" d="M3 556V229H323V556"/>
+<path class="bm-line bm-roof" pathLength="1" d="M-40 246L163 64L366 246"/>
+<g clip-path="url(#bmr${n})"><image href="img/logo-mark-bone.png" x="0" y="225" width="326" height="335"/></g>
+${full ? `<g clip-path="url(#bmw${n})"><image class="bm-word" href="img/logo-word-bone.png" x="340" y="225" width="864" height="335"/></g>` : ''}</g></svg>`;
+}
+// p from 0 to 1: how far the logo square has risen inside the drawn walls.
+function markRise(svg, p) {
+  const r = svg && svg.querySelector('.bm-rise');
+  p = Math.min(1, Math.max(0, p || 0));
+  if (r) { r.setAttribute('y', 555 - 326 * p); r.setAttribute('height', 326 * p); }
+}
+const BM_SAY = 'Từ bản vẽ đến chìa khóa trao tay';
+
 /* ---------- Preloader (home only) ---------- */
+// The counter follows real work: fonts and the first screen's pictures. On pages with 3D the first model stage is then
+// built while the finished logo holds still, so the stage setup never shows as a stutter.
 function runLoader() {
   const loader = $('#loader');
   if (!loader) { document.documentElement.classList.add('loaded'); return; }
-  const countEl = $('#loaderCount'), bar = $('#loaderBar');
+  loader.innerHTML = `<svg class="bm-bg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><path d="M-200 820L520 180L1240 820M380 900L1100 260L1820 900"/></svg>
+<div class="bm-box">${brandMark(true)}<div class="bm-meta"><span class="bm-num" id="loaderCount">00</span><span class="bm-say">${BM_SAY}</span></div></div>`;
+  const svg = $('.bm', loader), countEl = $('#loaderCount');
   document.body.classList.add('locked');
-  const duration = reduced ? 200 : 1600;
-  let start = 0;
-  const step = now => {
-    start = start || now;
-    const t = clamp((now - start) / duration, 0, 1);
-    const v = Math.round((1 - Math.pow(1 - t, 3)) * 100);
-    countEl.textContent = v;
-    bar.style.transform = `scaleX(${v / 100})`;
-    if (t < 1) requestAnimationFrame(step);
-    else setTimeout(() => {
-      loader.classList.add('done');
-      document.documentElement.classList.add('loaded');
-      document.body.classList.remove('locked');
-      setTimeout(() => { loader.remove(); document.dispatchEvent(new Event('addc:loaded')); }, 1200);
-    }, 150);
+  const t0 = performance.now(), MIN = reduced ? 150 : 1500, MAX = 5000;
+  const first = $$('main img').filter(i => { const r = i.getBoundingClientRect(); return r.width && r.top < innerHeight && r.bottom > 0 && !i.complete; });
+  let pics = 0, fonts = false, shown = 0, formed = false, lifted = false;
+  first.forEach(i => { const f = () => pics++; i.addEventListener('load', f, { once: true }); i.addEventListener('error', f, { once: true }); });
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => { fonts = true; });
+  const target = () => (fonts ? .3 : 0) + .7 * (first.length ? pics / first.length : 1);
+  const lift = () => {
+    if (lifted) return; lifted = true;
+    loader.classList.add('done');
+    document.documentElement.classList.add('loaded');
+    document.body.classList.remove('locked');
+    setTimeout(() => { loader.hidden = true; document.dispatchEvent(new Event('addc:loaded')); }, 1100);
   };
-  // Start counting once the web fonts are in (each late font re-lays out the whole page), but never wait more than 1.2 s.
-  const go = () => requestAnimationFrame(() => requestAnimationFrame(step));
-  Promise.race([document.fonts ? document.fonts.ready : Promise.resolve(), new Promise(r => setTimeout(r, 1200))]).then(go);
+  const form = () => {
+    formed = true;
+    loader.classList.add('formed');
+    // The 3D of this page is prepared now, behind a still logo; the panel lifts when it is ready (never after 2.5 s).
+    const has3d = !!document.querySelector('[data-3d]') && !reduced;
+    document.dispatchEvent(new Event('addc:formed'));
+    const go = () => setTimeout(lift, 380);
+    if (has3d) {
+      const cap = setTimeout(go, 2500);
+      document.addEventListener('addc:stage-built', () => { clearTimeout(cap); go(); }, { once: true });
+    } else setTimeout(lift, 900);
+  };
+  const step = now => {
+    const el = now - t0;
+    const want = el > MAX ? 1 : Math.min(target(), el / MIN);
+    shown += (want - shown) * .14;
+    if (want === 1 && 1 - shown < .004) shown = 1;
+    countEl.textContent = String(Math.round(shown * 100)).padStart(2, '0');
+    markRise(svg, shown);
+    if (shown < 1) requestAnimationFrame(step); else if (!formed) form();
+  };
+  requestAnimationFrame(step);
 }
 
 /* ---------- Clock ---------- */
@@ -359,20 +400,46 @@ function prepareMotion() {
   $$('.slide-media, .layers figure, .svc-figure, .path-media').forEach(el => { el.classList.add('wipe'); el.parentElement.classList.add('wipe-host'); });
 }
 
+// Section titles rise word by word out of a mask as they scroll in (the masks are padded for Vietnamese accents
+// and dropped once the words have landed, so ư, ơ and stacked marks are never clipped).
+function prepareTitles() {
+  if (reduced) return;
+  $$('.h-l.rv, .h-xl').forEach(h => {
+    h.classList.remove('rv'); h.classList.add('hrise');
+    let i = 0;
+    const wrap = node => {
+      const w = document.createElement('span'); w.className = 'hw';
+      const inner = document.createElement('span'); inner.style.setProperty('--wi', i++);
+      inner.append(node); w.append(inner); return w;
+    };
+    [...h.childNodes].forEach(n => {
+      if (n.nodeType === 3) {
+        const frag = document.createDocumentFragment();
+        n.textContent.split(/(\s+)/).forEach(part => {
+          if (!part) return;
+          frag.append(/^\s+$/.test(part) ? document.createTextNode(' ') : wrap(document.createTextNode(part)));
+        });
+        n.replaceWith(frag);
+      } else if (n.nodeType === 1 && n.tagName !== 'BR') n.replaceWith(wrap(n.cloneNode(true)));
+    });
+  });
+}
 function initReveal() {
   prepareMotion();
+  prepareTitles();
   const io = new IntersectionObserver(entries => {
     entries.forEach(en => {
       if (!en.isIntersecting) return;
       en.target.classList.add('in');
       // Once a masked heading has risen, drop the masks so accents and horns (ư, ơ) are never clipped.
       if (en.target.classList.contains('split')) setTimeout(() => en.target.classList.add('done'), 1700);
+      if (en.target.classList.contains('hrise')) setTimeout(() => en.target.classList.add('done'), 1800);
       const num = $('.stat-num', en.target) || $('.figure[data-count]', en.target);
       if (num) countUp(num);
       io.unobserve(en.target);
     });
   }, { threshold: 0, rootMargin: '0px 0px -4% 0px' });
-  $$('.reveal, .contact-title, .next-title, .split, .wipe-host, .rv, .rv-img').forEach(el => io.observe(el));
+  $$('.reveal, .contact-title, .next-title, .split, .wipe-host, .rv, .rv-img, .hrise:not(.hero-panel .hrise)').forEach(el => io.observe(el));
 }
 function countUp(el) {
   const target = +el.dataset.count;
@@ -879,6 +946,10 @@ function initReel() {
   addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
   addEventListener('resize', () => { size(); update(); });
   addEventListener('load', () => { size(); update(); });
+  // The strip is measured again whenever its length changes (fonts, pictures or the window settling late), so the
+  // progress line only fills when the last picture has really arrived.
+  if ('ResizeObserver' in window) { const ro = new ResizeObserver(() => { size(); update(); }); [track, ...track.children].forEach(el => ro.observe(el)); }
+  if (document.fonts) document.fonts.ready.then(() => { size(); update(); });
   size(); update();
 }
 function initParallax() {
@@ -957,13 +1028,27 @@ function markLoading(root = document) {
     if (ldWatch) ldWatch.observe(fr);
   });
 }
-// 3D stages: a house drawn line by line stands in while the model is fetched and built.
-const DRAW_SVG = '<svg class="stage-draw" viewBox="0 0 120 90" aria-hidden="true"><path pathLength="1" d="M4 84H116"/><path pathLength="1" d="M22 84V44H98V84"/><path pathLength="1" d="M12 48L60 10L108 48"/><path pathLength="1" d="M52 84V60H68V84"/><path pathLength="1" d="M30 54H44V66H30ZM76 54H90V66H76Z"/></svg>';
+// Pictures start downloading about two screens before they scroll in, not at the browser's own short lazy distance,
+// so a quick scroll meets finished photos instead of empty boxes.
+function initEarlyImages() {
+  const imgs = $$('img[loading="lazy"]');
+  if (!imgs.length || !('IntersectionObserver' in window)) return;
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    io.unobserve(e.target);
+    e.target.loading = 'eager';
+  }), { rootMargin: '220% 0px' });
+  imgs.forEach(i => io.observe(i));
+}
+// 3D stages: the same house and logo square stand in while the models download; the square rises with the real bytes.
 function initStageLoaders() {
   $$('.stage-status').forEach(s => {
-    if (s.querySelector('.stage-draw')) return;
-    const label = document.createElement('span'); label.textContent = s.textContent.trim() || 'Đang tải mô hình 3D';
-    s.replaceChildren(); s.insertAdjacentHTML('afterbegin', DRAW_SVG); s.append(label);
+    if (s.querySelector('.bm')) return;
+    const label = s.textContent.trim() || 'Đang tải mô hình 3D';
+    s.innerHTML = `${brandMark(false)}<span class="bm-stage-say">${label}<b data-pct>00</b></span>`;
+    // scene3d.js writes the percentage; the square follows it here.
+    const svg = s.querySelector('.bm'), pct = s.querySelector('[data-pct]');
+    new MutationObserver(() => markRise(svg, (+pct.textContent || 0) / 100)).observe(pct, { childList: true, characterData: true, subtree: true });
   });
 }
 
@@ -971,7 +1056,10 @@ function initCurtain() {
   const root = document.documentElement;
   if (reduced) { root.classList.remove('arriving'); return; }
   const c = document.createElement('div'); c.className = 'curtain'; c.setAttribute('aria-hidden', 'true');
-  c.innerHTML = '<div class="curtain-in"><img src="img/logo-bone.png" alt="" width="1200" height="335" /><div class="curtain-bar"><b></b></div></div>';
+  c.innerHTML = `<div class="curtain-in">${brandMark(true)}<div class="bm-meta"><span class="bm-num">00</span><span class="bm-say">${BM_SAY}</span></div></div>`;
+  const cSvg = $('.bm', c), cNum = $('.bm-num', c);
+  // The square rises with the share of first-screen pictures in; the number follows.
+  const setP = p => { markRise(cSvg, p); cNum.textContent = String(Math.round(p * 100)).padStart(2, '0'); };
   document.body.append(c);
   if (root.classList.contains('arriving')) {
     // Lift once the pictures on the first screen are in (the line fills as each arrives), never later than 1.4 s.
@@ -984,11 +1072,11 @@ function initCurtain() {
     let done = 0, lifted = false;
     const lift = () => {
       if (lifted) return; lifted = true;
-      c.style.setProperty('--p', 1);
-      setTimeout(() => { c.classList.add('lift'); root.classList.remove('arriving'); }, 220);
+      setP(1); c.classList.add('formed');
+      setTimeout(() => { c.classList.add('lift'); root.classList.remove('arriving'); }, 650);
     };
     const tick = () => {
-      c.style.setProperty('--p', first.length ? done / first.length : 1);
+      setP(first.length ? done / first.length : 1);
       if (done >= first.length) setTimeout(lift, Math.max(0, 380 - (performance.now() - t0)));
     };
     first.forEach(i => { const f = () => { done++; tick(); }; i.addEventListener('load', f, { once: true }); i.addEventListener('error', f, { once: true }); });
@@ -1057,6 +1145,7 @@ document.addEventListener('DOMContentLoaded', () => {
   addHoverPhotos();
   initCurtain();
   initStageLoaders();
+  initEarlyImages();
   useSizes();
   markLoading();
   runLoader();
