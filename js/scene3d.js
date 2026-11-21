@@ -1,7 +1,7 @@
-import { createModelLoader, preloadModels, downloaded } from './addc-loader.js?v=20261121g';
-import { prepareModel, installFade } from './addc-polish.js?v=20261121g';
-import { installStageOrbit } from './addc-orbit.js?v=20261121g';
-import { assembleHouse, createPhasePlayer, mountedModel } from './addc-motion.js?v=20261121g';
+import { createModelLoader, preloadModels, downloaded } from './addc-loader.js?v=20261121h';
+import { prepareModel, installFade } from './addc-polish.js?v=20261121h';
+import { installStageOrbit } from './addc-orbit.js?v=20261121h';
+import { assembleHouse, createPhasePlayer, mountedModel } from './addc-motion.js?v=20261121h';
 /* ADDC 3D: procedural models, built from code so the site works today.
    When realistic GLB files are ready (see 3D-PROMPTS.md), put them in models/ and fill in MODELS below.
    An empty string keeps the procedural model. One WebGL renderer per page, paused while off-screen. */
@@ -1629,12 +1629,34 @@ async function initJourney(el) {
     }));
   }).catch(e => console.warn('ADDC walkthrough interior unavailable', e));
   const glows = house.parts.filter(pt => pt.obj.material === M.warm).map(pt => pt.obj);
+  // The finished house's double front door (EntranceDoor_1 and _2 in the last stage's model). Each leaf is moved into a
+  // pivot at its outer edge, so turning the pivot swings the leaf inwards on its hinge, as a real door opens.
+  const doors = [];
+  phases.loaded.then(() => {
+    const last = st.scene.getObjectByName(`ADDC construction phase ${MODELS.phases.length}`);
+    if (!last) return;
+    [['EntranceDoor_1', 1], ['EntranceDoor_2', -1]].forEach(([name, side]) => {
+      const leaf = last.getObjectByName(name);
+      if (!leaf) return;
+      const box = new THREE.Box3().setFromObject(leaf);
+      const hx = side > 0 ? box.min.x : box.max.x, hz = (box.min.z + box.max.z) / 2;
+      const pivot = new THREE.Group();
+      pivot.position.set(hx, 0, hz);
+      leaf.parent.add(pivot);
+      leaf.position.x -= hx; leaf.position.z -= hz;
+      pivot.add(leaf);
+      doors.push({ pivot, side });
+    });
+  });
 
   // Camera path: [step, position, target, field of view].
   const K = [
     [0, [26, 34, 32], [0, 0, 0], 32], [1, [22, 26, 28], [0, 1, 0], 32], [2.2, [24, 19, 30], [0, 5, 0], 32],
     [3.4, [22, 14, 28], [0, 4, 0], 32], [4.6, [24, 16, 28], [0, 5, 0], 32], [5.05, [22, 12, 27], [0, 5, 0], 32],
-    [5.45, [1.6, 3.4, 21], [.8, 2.6, 4], 34], [5.75, [.9, 1.8, 7.5], [.9, 1.6, 0], 46], [6, [.6, 1.7, 3.4], [1.5, 1.3, -1.4], 58]
+    // then down to the street in front of the gate, facing the front door; up to it as it opens; through the doorway
+    // at eye height; and round into the living room while the door closes behind
+    [5.3, [-2.3, 2.1, 17], [-2.3, 1.6, 4.9], 40], [5.52, [-2.3, 1.75, 7.4], [-2.3, 1.6, 2], 46],
+    [5.74, [-2.3, 1.7, 3.7], [-1.4, 1.55, 0], 52], [6, [-1.2, 1.7, 2.3], [1.5, 1.3, -1.4], 58]
   ];
   const v = new THREE.Vector3(), tg = new THREE.Vector3(), pos = new THREE.Vector3(...K[0][1]), look = new THREE.Vector3(...K[0][2]);
   const sample = t => {
@@ -1661,14 +1683,16 @@ async function initJourney(el) {
     // Build: nothing until the contract step, piles at step 4, structure through step 5, finishes and lights in step 6.
     const pf = t < 3 ? 0 : t < 4 ? (t - 3) * 1.2 : t < 5 ? 1.2 + (t - 4) * 3.8 : Math.min(7.2, 5 + (t - 5) * 5.5);
     if (t < 3) phases.hide();
-    const interior = t > 5.78 && rebuiltRoom.children.length > 0;
+    const interior = t > 5.42 && rebuiltRoom.children.length > 0;
     house.group.visible = t >= 3 && !phases.draw(pf, { reduced, interior });
     if (house.group.visible) applyParts(house.parts, pf);
     const show = smooth(1, 1.5, t) * (1 - smooth(4.4, 5.1, t));
     wire.forEach((ls, i) => { const d = smooth(1.1 + i * .22, 1.5 + i * .22, t); ls.material.opacity = .9 * show * d; ls.visible = ls.material.opacity > .01; ls.scale.y = Math.max(d, .001); });
     grid.material.opacity = .45 * (1 - smooth(3, 3.6, t)); grid.visible = grid.material.opacity > .01;
     const sv = smooth(0, .5, t) * (1 - smooth(3.2, 3.8, t)); stakes.visible = sv > .01; stakes.scale.setScalar(Math.max(sv, .001));
-    const inside = smooth(5.55, 5.85, t);
+    const inside = smooth(5.4, 5.6, t);
+    const open = smooth(5.4, 5.6, t) * (1 - smooth(5.82, 6, t));
+    doors.forEach(d => { d.pivot.rotation.y = d.side * open * 1.45; });
     rebuiltRoom.visible = inside > .01 && rebuiltRoom.children.length > 0;
     room.visible = inside > .01 && !rebuiltRoom.visible;
     lamp.intensity = 6 * inside;
