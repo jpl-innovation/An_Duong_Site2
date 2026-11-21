@@ -1,7 +1,7 @@
-import { createModelLoader, preloadModels, downloaded } from './addc-loader.js?v=20261121b';
-import { prepareModel, installFade } from './addc-polish.js?v=20261121b';
-import { installStageOrbit } from './addc-orbit.js?v=20261121b';
-import { assembleHouse, createPhasePlayer, mountedModel } from './addc-motion.js?v=20261121b';
+import { createModelLoader, preloadModels, downloaded } from './addc-loader.js?v=20261121c';
+import { prepareModel, installFade } from './addc-polish.js?v=20261121c';
+import { installStageOrbit } from './addc-orbit.js?v=20261121c';
+import { assembleHouse, createPhasePlayer, mountedModel } from './addc-motion.js?v=20261121c';
 /* ADDC 3D: procedural models, built from code so the site works today.
    When realistic GLB files are ready (see 3D-PROMPTS.md), put them in models/ and fill in MODELS below.
    An empty string keeps the procedural model. One WebGL renderer per page, paused while off-screen. */
@@ -1689,7 +1689,9 @@ const build = el => {
 };
 const lazy = new IntersectionObserver(entries => entries.forEach(e => e.isIntersecting && build(e.target)), { rootMargin: '1600px 0px' });
 const stages = [...document.querySelectorAll('[data-3d]')];
-stages.forEach(el => lazy.observe(el));
+// On the home page the loader decides when stages are built (behind its still final photo).
+const loaderUp = !!document.getElementById('loader') && !document.documentElement.classList.contains('loaded') && !document.documentElement.dataset.formed;
+if (!loaderUp) stages.forEach(el => lazy.observe(el)); else document.addEventListener('addc:formed', () => stages.forEach(el => lazy.observe(el)), { once: true });
 // Every model this page shows is downloaded in the background from the start, nearest stage first, so it is already on
 // the machine when the visitor scrolls to it. Downloading never blocks the page; only parsing does, and that waits.
 const STAGE_MODELS = {
@@ -1706,7 +1708,9 @@ if (!saveData) preloadModels(stages.flatMap(el => (STAGE_MODELS[el.dataset['3d']
 // Every stage is built as soon as this module arrives, while the visitor is still on the first screen
 // (on the home page the module itself is only fetched after the intro, at an idle moment).
 // Building later meant shader compiles landing in the middle of a scroll.
-stages.forEach((el, i) => setTimeout(() => whenQuiet(() => build(el)), i * 120));
+// On the home page the loader says when: stages are built behind its still final photo, never under its animation.
+const buildAll = () => stages.forEach((el, i) => setTimeout(() => whenQuiet(() => build(el)), i * 120));
+if (loaderUp) document.addEventListener('addc:formed', buildAll, { once: true }); else buildAll();
 // Stages further down are built ahead of time, but only in a truly idle moment (no scrolling or animation running).
 if ('requestIdleCallback' in window) {
   const next = () => requestIdleCallback(d => {

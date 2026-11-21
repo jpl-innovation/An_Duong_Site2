@@ -28,6 +28,8 @@
 html { -webkit-text-size-adjust: 100%; }
 body { font-family: var(--f-body); font-size: 17px; line-height: 1.6; color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; }
 body.locked { overflow: hidden; }
+/* the scrollbar's space is kept while the page is locked, so nothing shifts sideways when the loader lets go */
+html { scrollbar-gutter: stable; }
 img { display: block; max-width: 100%; }
 a { color: inherit; text-decoration: none; }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
@@ -66,11 +68,6 @@ main, .footer { will-change: transform; }
 .loader { position: fixed; inset: 0; z-index: 1000; background: var(--ink); color: var(--on-dark); display: none; transition: transform 1s var(--ease); will-change: transform; }
 .js .loader { display: grid; place-items: center; }
 .loader.done { transform: translate3d(0, -100%, 0); }
-.loader-inner { display: grid; justify-items: center; gap: 28px; }
-.loader-logo { width: min(280px, 60vw); height: auto; }
-.loader-row { display: flex; align-items: center; gap: 18px; font-family: var(--f-meta); font-size: 18px; color: var(--on-dark-2); }
-.loader-bar { width: 160px; height: 1px; background: rgba(236, 233, 227, .2); }
-.loader-bar span { display: block; height: 100%; background: var(--on-dark); transform: scaleX(0); transform-origin: left; will-change: transform; }
 
 /* ---------- Header ---------- */
 .header { position: fixed; z-index: 100; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 18px var(--pad); color: var(--on-dark); background: var(--ink); transition: transform .5s var(--ease-out), background-color .4s, color .4s, padding .4s; }
@@ -751,28 +748,19 @@ main > .studio:first-child .stage { min-height: calc(100svh - 70px); }
 
 /* 3D stages: the house draws itself line by line while the model is built */
 .stage-status { align-content: center; gap: 18px; text-align: center; }
-.stage-draw { width: 120px; height: auto; margin: 0 auto; color: var(--on-dark); }
-.stage-draw path { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw-line 2.6s var(--ease) infinite; }
-.stage-draw path:nth-child(2) { animation-delay: .25s; } .stage-draw path:nth-child(3) { animation-delay: .5s; } .stage-draw path:nth-child(4) { animation-delay: .75s; } .stage-draw path:nth-child(5) { animation-delay: .9s; }
-@keyframes draw-line { 0% { stroke-dashoffset: 1; } 45%, 70% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -1; } }
 .stage canvas { transition: opacity .9s var(--ease-out); }
 .stage:not(.ready):not(.failed) canvas { opacity: 0; }
-.stage.failed .stage-draw { display: none; }
 
 /* page change: the curtain carries the logo and a progress line that fills as the next page's first pictures arrive */
 .curtain { display: grid; place-items: center; }
 .curtain-in { display: grid; justify-items: center; gap: 22px; opacity: 0; transition: opacity .35s; }
 .curtain.cover .curtain-in, html.arriving .curtain-in { opacity: 1; }
 .curtain.lift .curtain-in { opacity: 0; transition-duration: .25s; }
-.curtain-in img { width: min(200px, 46vw); height: auto; }
-.curtain-bar { width: 140px; height: 1px; background: rgba(236, 233, 227, .2); overflow: hidden; }
-.curtain-bar b { display: block; height: 100%; background: var(--on-dark); transform: scaleX(var(--p, 0)); transform-origin: left; transition: transform .3s var(--ease-out); }
 /* fail open: the cover painted before any script runs never outlives a broken or slow script */
 html.arriving::after { animation: fail-open 0s 3s forwards; }
 @keyframes fail-open { to { visibility: hidden; } }
 @media (prefers-reduced-motion: reduce) {
-  .ld::after, .stage-draw path { animation: none; }
-  .stage-draw path { stroke-dashoffset: 0; }
+  .ld::after { animation: none; }
 }
 @media (prefers-reduced-motion: reduce) { .curtain { display: none; } }
 /* a split picture keeps its shape before it loads, so nothing below it jumps mid-scroll */
@@ -854,49 +842,67 @@ html[data-theme="moss"] .header.is-light { background: var(--bg); }
 
 .stage canvas.stage-veil { position: absolute; pointer-events: none; visibility: hidden; opacity: 0; transition: none; }
 
-/* ---------- Brand mark: house lines that become the ADDC logo (home loader, page change, 3D stages) ---------- */
-.bm { display: block; height: auto; overflow: visible; }
-.bm-line { fill: none; stroke: var(--on-dark); stroke-width: 7; stroke-linecap: square; stroke-dasharray: 1; stroke-dashoffset: 1; }
-.loader .bm-line, .curtain.cover .bm-line, .stage-status .bm-line { animation: bm-draw .9s var(--ease-out) forwards; }
-.bm-walls { animation-delay: .12s !important; animation-duration: 1.05s !important; }
-.bm-roof { animation-delay: .5s !important; }
-.curtain.cover .bm-walls { animation-delay: .05s !important; animation-duration: .45s !important; }
-.curtain.cover .bm-roof { animation-delay: .2s !important; animation-duration: .35s !important; }
-html.arriving .curtain .bm-line { stroke-dashoffset: 0; }
-@keyframes bm-draw { to { stroke-dashoffset: 0; } }
-/* the finished logo: walls and ground give way to the solid square, the roof stays on it, the wordmark slides out */
-.bm-full .bm-lock { transform: translateX(437px); transition: transform 1s var(--ease); }
-.formed .bm-full .bm-lock { transform: translateX(18px); }
-.bm-walls, .bm-ground { transition: opacity .5s .2s; }
-.formed .bm-walls, .formed .bm-ground { opacity: 0; }
-.bm-word { transform: translateX(-160px); opacity: 0; transition: transform 1s var(--ease) .08s, opacity .5s .15s; }
-.formed .bm-word { transform: none; opacity: 1; }
-.bm-meta { display: flex; align-items: baseline; justify-content: center; gap: 18px; margin-top: 6px; color: var(--on-dark-2); transition: opacity .4s; }
-.bm-num { min-width: 2.4ch; font-family: var(--f-figure); font-size: clamp(34px, 3vw, 48px); font-weight: 400; line-height: 1; color: var(--on-dark); font-variant-numeric: tabular-nums lining-nums; text-align: right; }
-.bm-say { font-family: var(--f-meta); font-size: 18px; letter-spacing: .02em; }
-.formed .bm-meta { opacity: 0; }
+/* ---------- Rolling counter ---------- */
+.od { display: inline-flex; line-height: 1; font-variant-numeric: tabular-nums lining-nums; }
+.od-c { display: block; width: .62em; height: 1.08em; overflow: hidden; }
+.od-s i { display: block; height: 1.08em; line-height: 1.08em; font-style: normal; }
+.od-h { width: 0; transition: width .5s var(--ease); }
+.od-h.open { width: .62em; }
+.od-s { display: block; text-align: center; transition: transform .42s cubic-bezier(.34, 1.3, .5, 1); will-change: transform; }
+.od-c + .od-c + .od-c .od-s { transition-duration: .3s; }
 
+/* ---------- Home preloader: ADDC's work through one window, opening into the hero ---------- */
 .loader { overflow: hidden; }
-.bm-box { position: relative; display: grid; justify-items: center; gap: 10px; transition: transform .9s var(--ease), opacity .6s; }
-.bm-box .bm { width: min(760px, 86vw); }
-.loader.done .bm-box { transform: translate3d(0, -14vh, 0); opacity: 0; }
-.bm-bg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.bm-bg path { fill: none; stroke: var(--on-dark); stroke-width: 1.4; opacity: .07; animation: bm-drift 16s ease-in-out infinite alternate; }
-@keyframes bm-drift { to { transform: translate3d(-90px, -36px, 0); } }
+.loader .lw { position: fixed; overflow: hidden; clip-path: var(--win, inset(50%)); }
+.loader.open .lw { animation: lw-open 1.25s var(--ease) forwards; }
+@keyframes lw-open {
+  0% { clip-path: var(--win); }
+  16% { clip-path: var(--win-in, var(--win)); }
+  100% { clip-path: inset(0 0 0 0); }
+}
+.lw-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; clip-path: inset(100% 0 0 0); transition: clip-path .9s var(--ease); }
+.lw-img.on { clip-path: inset(0 0 0 0); animation: lw-drift 4s var(--ease-out) both; }
+@keyframes lw-drift { from { transform: scale(1.14); } to { transform: scale(1.04); } }
+.lw-hero.on { animation: none; transform: var(--hero-t, none); }
+.loaded .lw-hero { transform: none; transition: transform 2.6s var(--ease-out); }
+.lw-logo { position: fixed; top: 18px; left: var(--pad); width: auto; height: 34px; transition: opacity .4s; }
+.lw-count { position: fixed; left: var(--pad); bottom: 5vh; font-family: var(--f-figure); font-weight: 300; font-size: clamp(72px, 10vw, 190px); color: var(--on-dark); transition: transform .9s var(--ease), opacity .6s; }
+.lw-say { position: fixed; right: var(--pad); bottom: calc(5vh + .4em); display: grid; justify-items: end; gap: 6px; text-align: right; overflow: hidden; padding-top: .3em; transition: transform .9s var(--ease) .06s, opacity .6s .06s; }
+.lw-word { font-family: var(--f-display); font-size: clamp(24px, 2.2vw, 38px); font-weight: 500; color: var(--on-dark); }
+.lw-cap { font-size: 15px; color: var(--on-dark-2); }
+.say-in .lw-word { animation: lw-rise .7s var(--ease-out) both; }
+.say-in .lw-cap { animation: lw-rise .7s var(--ease-out) .08s both; }
+@keyframes lw-rise { from { transform: translate3d(0, 110%, 0); opacity: 0; } to { transform: none; opacity: 1; } }
+.loader.open .lw-count { transform: translate3d(0, 40%, 0); opacity: 0; }
+.loader.open .lw-say { transform: translate3d(0, 60%, 0); opacity: 0; }
+@media (max-width: 760px) {
+  .lw-count { bottom: 4vh; font-size: 84px; }
+  .lw-say { bottom: calc(4vh + 10px); max-width: 52vw; }
+  .lw-word { font-size: 22px; }
+  .lw-cap { font-size: 13px; }
+}
 
-.curtain-in .bm { width: min(620px, 82vw); }
-.curtain-in { gap: 8px; }
+/* ---------- Page change: the destination's name ---------- */
+.curtain-in { display: grid; justify-items: center; gap: 22px; opacity: 1; }
+.cn { display: block; overflow: hidden; padding: .2em .1em .12em; }
+.cn-w { display: block; font-family: var(--f-display); font-weight: 500; font-size: clamp(44px, 7vw, 120px); line-height: 1; color: var(--on-dark); transform: translate3d(0, 115%, 0); }
+.curtain.cover .cn-w { animation: cn-in .5s var(--ease-out) .12s forwards; }
+html.arriving .curtain .cn-w { transform: none; }
+.curtain.lift .cn-w { transform: translate3d(0, -40%, 0); opacity: 0; transition: transform .7s var(--ease), opacity .45s; }
+@keyframes cn-in { to { transform: none; } }
+.cn-line { display: block; width: 120px; height: 1px; background: rgba(236, 233, 227, .18); overflow: hidden; }
+.cn-line b { display: block; height: 100%; background: var(--accent); transform: scaleX(var(--p, 0)); transform-origin: left; transition: transform .3s var(--ease-out); }
 
-.stage-status .bm { width: 116px; }
+/* ---------- 3D stage: a rolling percentage and a hairline ---------- */
+.stage-status { gap: 12px; }
+.sl-num { font-family: var(--f-figure); font-weight: 300; font-size: 56px; color: var(--on-dark); }
+.sl-num::after { content: '%'; font-size: .4em; margin-left: .1em; vertical-align: top; color: var(--on-dark-2); }
+.sl-line { display: block; width: 140px; height: 1px; background: rgba(236, 233, 227, .18); overflow: hidden; }
+.sl-line b { display: block; height: 100%; background: var(--accent); transform: scaleX(0); transform-origin: left; transition: transform .4s var(--ease-out); }
 .bm-stage-say { font-size: 14px; color: var(--on-dark-2); }
-.bm-stage-say b { margin-left: .5em; font-family: var(--f-figure); font-weight: 400; font-size: 15px; color: var(--on-dark); font-variant-numeric: tabular-nums; }
-.bm-stage-say b::after { content: '%'; margin-left: 1px; opacity: .7; }
-.studio .stage-status .bm-line { stroke: var(--on-dark); }
 
 @media (prefers-reduced-motion: reduce) {
-  .bm-line { animation: none !important; stroke-dashoffset: 0; }
-  .bm-full .bm-lock, .bm-word, .bm-box { transition: none; }
-  .bm-bg path { animation: none; }
+  .od-s, .lw-img, .cn-w, .sl-line b { transition: none; animation: none; }
 }
 
 /* Picture frames wait in a tone close to a photo's own (not a pale card), so a late picture never flashes light. */
@@ -910,3 +916,6 @@ html[data-theme="moss"] :is(.mosaic figure, .svc-media, .card-media, .split-medi
 .hero-panel .hrise .hw > span { transition-delay: calc(var(--wi, 0) * 70ms + .55s); }
 .hrise.done .hw { overflow: visible; }
 @media (prefers-reduced-motion: reduce) { .hrise .hw > span { transform: none; transition: none; } }
+
+/* the finished loader leaves the page entirely (the .js display rule above would otherwise keep it on top) */
+.loader[hidden] { display: none !important; }

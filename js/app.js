@@ -180,69 +180,130 @@ const fmt = n => new Intl.NumberFormat('vi-VN').format(Math.round(n));
 const pad2 = n => String(n).padStart(2, '0');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/* ---------- Brand mark: a house drawn in line that becomes the ADDC logo ---------- */
-// The ADDC square of the logo is the house's walls: the walls and roof are drawn first, the square then fills from the
-// ground up as the page really loads (the building rising), and at the end the wordmark slides out of the wall.
-let markN = 0;
-function brandMark(full) {
-  const n = ++markN;
-  return `<svg class="bm${full ? ' bm-full' : ''}" viewBox="${full ? '-70 0 1340 600' : '-60 40 446 540'}" aria-hidden="true">
-<defs><clipPath id="bmr${n}"><rect class="bm-rise" x="0" y="555" width="326" height="0"/></clipPath>${full ? `<clipPath id="bmw${n}"><rect x="338" y="0" width="900" height="600"/></clipPath>` : ''}</defs>
-<g class="bm-lock"><path class="bm-line bm-ground" pathLength="1" d="M-46 556H372"/><path class="bm-line bm-walls" pathLength="1" d="M3 556V229H323V556"/>
-<path class="bm-line bm-roof" pathLength="1" d="M-40 246L163 64L366 246"/>
-<g clip-path="url(#bmr${n})"><image href="img/logo-mark-bone.png" x="0" y="225" width="326" height="335"/></g>
-${full ? `<g clip-path="url(#bmw${n})"><image class="bm-word" href="img/logo-word-bone.png" x="340" y="225" width="864" height="335"/></g>` : ''}</g></svg>`;
+/* ---------- Rolling counter ---------- */
+// Each digit is a strip of 0-9 that rolls to its value, so the units spin past while the tens step: a staggered,
+// mechanical count instead of numbers swapping. The hundreds column only opens when the count reaches 100.
+function odometer(el) {
+  el.classList.add('od');
+  el.innerHTML = [0, 1, 2].map(i => `<span class="od-c${i === 0 ? ' od-h' : ''}"><span class="od-s">${'01234567890'.split('').map(d => `<i>${d}</i>`).join('')}</span></span>`).join('');
+  const strips = $$('.od-s', el), h = $('.od-h', el);
+  let last = -1;
+  return v => {
+    v = Math.max(0, Math.min(100, Math.round(v)));
+    if (v === last) return; last = v;
+    const d = String(v).padStart(3, '0');
+    // At 100 the tens and units roll on to the extra 0 after the 9, forwards like a real counter, never back through 8-1.
+    strips.forEach((s, i) => { const k = v === 100 && i ? 10 : +d[i]; s.style.transform = `translate3d(0, ${-k * 1.08}em, 0)`; });
+    h.classList.toggle('open', v >= 100);
+  };
 }
-// p from 0 to 1: how far the logo square has risen inside the drawn walls.
-function markRise(svg, p) {
-  const r = svg && svg.querySelector('.bm-rise');
-  p = Math.min(1, Math.max(0, p || 0));
-  if (r) { r.setAttribute('y', 555 - 326 * p); r.setAttribute('height', 326 * p); }
-}
-const BM_SAY = 'Từ bản vẽ đến chìa khóa trao tay';
 
-/* ---------- Preloader (home only) ---------- */
-// The counter follows real work: fonts and the first screen's pictures. On pages with 3D the first model stage is then
-// built while the finished logo holds still, so the stage setup never shows as a stutter.
+/* ---------- Preloader (home, first visit of the session) ---------- */
+// ADDC's work in four photographs seen through one window: a drawing, the site, the finished room, then the
+// groundbreaking that opens the site. The photos are picked afresh on every visit. The count follows real loading
+// (fonts, the hero and the window's own pictures). When it lands, the window draws back a touch and opens into the
+// hero itself, so the page grows out of the loader. The 3D is prepared while the last photo holds still.
+const STORY = [
+  { word: 'Bản vẽ', pool: [['img/fb/log/12-w1280.jpg', 'Phương án mặt tiền nhà phố'], ['img/thietke-vungtau1-w1280.jpg', 'Phối cảnh biệt thự, Vũng Tàu']] },
+  { word: 'Thi công', pool: [['img/fb/log/13-w1280.jpg', 'Ép cọc nhà phố liền kề'], ['img/fb/log/02-w1280.jpg', 'Giàn giáo và lưới che công trình'], ['img/fb/mia/03-w1280.jpg', 'Khung tòa nhà văn phòng 6 tầng'], ['img/fb/hero/site-net-w1280.jpg', 'Công trường nhà phố, TP.HCM']] },
+  { word: 'Hoàn thiện', pool: [['img/fb/hotram/01-w1280.jpg', 'Villa Hồ Tràm, phòng khách'], ['img/fb/hotram/03-w1280.jpg', 'Villa Hồ Tràm, nội thất']] }
+];
 function runLoader() {
   const loader = $('#loader');
-  if (!loader) { document.documentElement.classList.add('loaded'); return; }
-  loader.innerHTML = `<svg class="bm-bg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><path d="M-200 820L520 180L1240 820M380 900L1100 260L1820 900"/></svg>
-<div class="bm-box">${brandMark(true)}<div class="bm-meta"><span class="bm-num" id="loaderCount">00</span><span class="bm-say">${BM_SAY}</span></div></div>`;
-  const svg = $('.bm', loader), countEl = $('#loaderCount');
-  document.body.classList.add('locked');
-  const t0 = performance.now(), MIN = reduced ? 150 : 1500, MAX = 5000;
-  const first = $$('main img').filter(i => { const r = i.getBoundingClientRect(); return r.width && r.top < innerHeight && r.bottom > 0 && !i.complete; });
-  let pics = 0, fonts = false, shown = 0, formed = false, lifted = false;
-  first.forEach(i => { const f = () => pics++; i.addEventListener('load', f, { once: true }); i.addEventListener('error', f, { once: true }); });
-  (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => { fonts = true; });
-  const target = () => (fonts ? .3 : 0) + .7 * (first.length ? pics / first.length : 1);
-  const lift = () => {
-    if (lifted) return; lifted = true;
-    loader.classList.add('done');
-    document.documentElement.classList.add('loaded');
+  const root = document.documentElement;
+  if (!loader) { root.classList.add('loaded'); return; }
+  let seen = false;
+  try { seen = !!sessionStorage.getItem('addc-home'); sessionStorage.setItem('addc-home', '1'); } catch (e) {}
+  const heroImg = $('.hero-img');
+  const finish = () => {
+    root.classList.add('loaded');
     document.body.classList.remove('locked');
-    setTimeout(() => { loader.hidden = true; document.dispatchEvent(new Event('addc:loaded')); }, 1100);
+    loader.hidden = true;
+    root.dataset.formed = '1'; document.dispatchEvent(new Event('addc:formed'));
+    document.dispatchEvent(new Event('addc:loaded'));
+  };
+  // A second visit in the same session goes straight to the page: the story is told once.
+  if (seen || reduced || !heroImg) { finish(); return; }
+
+  const pick = STORY.map(st => { const [src, cap] = st.pool[Math.floor(Math.random() * st.pool.length)]; return { src, cap, word: st.word }; });
+  pick.push({ src: heroImg.currentSrc || heroImg.src, cap: 'Lễ khởi công nhà ở, Cát Lái', word: 'Khởi công', hero: true });
+  loader.innerHTML = `<div class="lw">${pick.map((f, i) => `<img class="lw-img${f.hero ? ' lw-hero' : ''}" src="${f.src}" alt="" decoding="async" ${i ? '' : 'fetchpriority="high"'} />`).join('')}</div>
+<img class="lw-logo" src="img/logo-white.png" alt="" width="1200" height="335" />
+<div class="lw-count"><span class="lw-num"></span></div>
+<div class="lw-say"><span class="lw-word"></span><span class="lw-cap"></span></div>`;
+  const box = $('.lw', loader), imgs = $$('.lw-img', loader), set = odometer($('.lw-num', loader));
+  const word = $('.lw-word', loader), cap = $('.lw-cap', loader);
+  const logo = $('.lw-logo', loader);
+  document.body.classList.add('locked');
+
+  // The window sits over the hero's own picture: same box, same crop, same starting zoom.
+  const place = () => {
+    // Measured without the hero's starting zoom (a transformed box reads 8% too large), and without starting
+    // its zoom transition while doing so.
+    const hs = heroImg.style;
+    hs.transition = 'none'; hs.transform = 'none';
+    const r = heroImg.getBoundingClientRect();
+    hs.transform = ''; void heroImg.offsetWidth; hs.transition = '';
+    const cs = getComputedStyle(heroImg);
+    Object.assign(box.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
+    imgs[imgs.length - 1].style.objectPosition = cs.objectPosition;
+    loader.style.setProperty('--hero-t', cs.transform === 'none' ? 'none' : cs.transform);
+    const wh = Math.min(innerHeight * .5, 560), ww = Math.min(wh * .78, innerWidth * .62);
+    const cx = innerWidth / 2, cy = innerHeight * .47;
+    const raw = [cy - wh / 2 - r.top, r.right - (cx + ww / 2), r.bottom - (cy + wh / 2), cx - ww / 2 - r.left];
+    const inset = k => `inset(${raw.map(v => Math.max(0, v + k).toFixed(1) + 'px').join(' ')})`;
+    loader.style.setProperty('--win', inset(0));
+    // The story photos fill the window itself (whole pictures); only the last, the hero, is the view that opens out.
+    const win = { left: cx - ww / 2 - r.left, top: cy - wh / 2 - r.top, width: ww, height: wh };
+    imgs.slice(0, -1).forEach(im => Object.assign(im.style, { inset: 'auto', left: win.left + 'px', top: win.top + 'px', width: win.width + 'px', height: win.height + 'px' }));
+    loader.style.setProperty('--win-in', inset(14));   // the small draw-back before the window opens
+    // The loader's logo sits exactly where the header's logo will be.
+    const lg = $('.header .logo-img'), lr = lg && lg.getBoundingClientRect();
+    if (lr && lr.width) Object.assign(logo.style, { left: lr.left + 'px', top: lr.top + 'px', height: lr.height + 'px' });
+  };
+  place();
+  addEventListener('resize', place);
+
+  let stage = -1;
+  const show = i => {
+    if (i === stage) return; stage = i;
+    imgs.forEach((im, k) => im.classList.toggle('on', k <= i));
+    word.textContent = pick[i].word; cap.textContent = pick[i].cap;
+    loader.classList.remove('say-in'); void word.offsetWidth; loader.classList.add('say-in');
+  };
+
+  const t0 = performance.now(), MIN = 2200, MAX = 6000;
+  const need = [heroImg, ...imgs.slice(0, 3)];
+  let fonts = false, shown = 0, formed = false, beat = 0;
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => { fonts = true; });
+  const ready = () => need.filter(i => i.complete).length / need.length;
+  const open = () => {
+    loader.classList.add('open');            // the window draws back a touch, then opens into the hero
+    // The hero's zoom starts on both pictures at once, so handing over from the loader's copy is invisible.
+    setTimeout(() => { root.classList.add('loaded'); }, 1250);
+    setTimeout(() => { finish(); removeEventListener('resize', place); }, 1550);
   };
   const form = () => {
     formed = true;
-    loader.classList.add('formed');
-    // The 3D of this page is prepared now, behind a still logo; the panel lifts when it is ready (never after 2.5 s).
-    const has3d = !!document.querySelector('[data-3d]') && !reduced;
-    document.dispatchEvent(new Event('addc:formed'));
-    const go = () => setTimeout(lift, 380);
-    if (has3d) {
-      const cap = setTimeout(go, 2500);
-      document.addEventListener('addc:stage-built', () => { clearTimeout(cap); go(); }, { once: true });
-    } else setTimeout(lift, 900);
+    show(3);
+    // The last photo wipes in (0.9 s); then, while it holds still, the page's 3D is built (addc:formed), and the
+    // window opens as soon as that is done (1.2 s at most). Building behind a still picture means no visible stutter.
+    setTimeout(() => {
+      const go = () => setTimeout(open, 120);
+      if (document.querySelector('[data-3d]')) {
+        const cap2 = setTimeout(go, 1200);
+        document.addEventListener('addc:stage-built', () => { clearTimeout(cap2); go(); }, { once: true });
+      } else go();
+      root.dataset.formed = '1'; document.dispatchEvent(new Event('addc:formed'));
+    }, 900);
   };
   const step = now => {
-    const el = now - t0;
-    const want = el > MAX ? 1 : Math.min(target(), el / MIN);
-    shown += (want - shown) * .14;
-    if (want === 1 && 1 - shown < .004) shown = 1;
-    countEl.textContent = String(Math.round(shown * 100)).padStart(2, '0');
-    markRise(svg, shown);
+    const el = Math.max(0, now - t0);
+    const want = el > MAX ? 1 : Math.min((fonts ? .25 : 0) + .75 * ready(), el / MIN);
+    shown += (want - shown) * .12;
+    if (want === 1 && 1 - shown < .003) shown = 1;
+    if (now - beat > 70 || shown === 1) { beat = now; set(shown * 100); }
+    show(shown < .34 ? 0 : shown < .67 ? 1 : 2);
     if (shown < 1) requestAnimationFrame(step); else if (!formed) form();
   };
   requestAnimationFrame(step);
@@ -1040,29 +1101,34 @@ function initEarlyImages() {
   }), { rootMargin: '220% 0px' });
   imgs.forEach(i => io.observe(i));
 }
-// 3D stages: the same house and logo square stand in while the models download; the square rises with the real bytes.
+// 3D stages: a rolling percentage of the models really downloaded, with a hairline that fills under it.
 function initStageLoaders() {
   $$('.stage-status').forEach(s => {
-    if (s.querySelector('.bm')) return;
+    if (s.querySelector('.od')) return;
     const label = s.textContent.trim() || 'Đang tải mô hình 3D';
-    s.innerHTML = `${brandMark(false)}<span class="bm-stage-say">${label}<b data-pct>00</b></span>`;
-    // scene3d.js writes the percentage; the square follows it here.
-    const svg = s.querySelector('.bm'), pct = s.querySelector('[data-pct]');
-    new MutationObserver(() => markRise(svg, (+pct.textContent || 0) / 100)).observe(pct, { childList: true, characterData: true, subtree: true });
+    s.innerHTML = '<span class="sl-num"></span><span class="sl-line"><b></b></span><span class="bm-stage-say">' + label + '<b data-pct hidden>00</b></span>';
+    const set = odometer($('.sl-num', s)), pct = $('[data-pct]', s), line = $('.sl-line b', s);
+    set(0);
+    // scene3d.js writes the percentage into [data-pct]; the counter and the line follow it here.
+    new MutationObserver(() => { const v = +pct.textContent || 0; set(v); line.style.transform = `scaleX(${v / 100})`; })
+      .observe(pct, { childList: true, characterData: true, subtree: true });
   });
 }
 
+// Page change: a moss panel rises over the page carrying the name of the page you are going to, and lifts off the new
+// page with the same name, so the move reads as one continuous gesture. It is quick on purpose: it runs on every click.
+const PAGE_NAMES = { 'index.html': 'An Dương', 'kien-truc.html': 'Kiến trúc', 'thi-cong.html': 'Thi công', 'noi-that.html': 'Nội thất', 'du-an.html': 'Dự án', 'gioi-thieu.html': 'Giới thiệu' };
+const pageName = path => PAGE_NAMES[(path.split('/').pop() || 'index.html')] || 'An Dương';
 function initCurtain() {
   const root = document.documentElement;
   if (reduced) { root.classList.remove('arriving'); return; }
   const c = document.createElement('div'); c.className = 'curtain'; c.setAttribute('aria-hidden', 'true');
-  c.innerHTML = `<div class="curtain-in">${brandMark(true)}<div class="bm-meta"><span class="bm-num">00</span><span class="bm-say">${BM_SAY}</span></div></div>`;
-  const cSvg = $('.bm', c), cNum = $('.bm-num', c);
-  // The square rises with the share of first-screen pictures in; the number follows.
-  const setP = p => { markRise(cSvg, p); cNum.textContent = String(Math.round(p * 100)).padStart(2, '0'); };
+  c.innerHTML = '<div class="curtain-in"><span class="cn"><span class="cn-w"></span></span><span class="cn-line"><b></b></span></div>';
+  const name = $('.cn-w', c);
   document.body.append(c);
   if (root.classList.contains('arriving')) {
-    // Lift once the pictures on the first screen are in (the line fills as each arrives), never later than 1.4 s.
+    name.textContent = pageName(location.pathname);
+    // Lift once the pictures on the first screen are in (the line under the name fills as each arrives), never later than 1.4 s.
     const t0 = performance.now();
     const first = $$('main img').filter(i => {
       if (i.complete || i.classList.contains('alt')) return false;
@@ -1072,12 +1138,12 @@ function initCurtain() {
     let done = 0, lifted = false;
     const lift = () => {
       if (lifted) return; lifted = true;
-      setP(1); c.classList.add('formed');
-      setTimeout(() => { c.classList.add('lift'); root.classList.remove('arriving'); }, 650);
+      c.style.setProperty('--p', 1);
+      setTimeout(() => { c.classList.add('lift'); root.classList.remove('arriving'); }, 160);
     };
     const tick = () => {
-      setP(first.length ? done / first.length : 1);
-      if (done >= first.length) setTimeout(lift, Math.max(0, 380 - (performance.now() - t0)));
+      c.style.setProperty('--p', first.length ? done / first.length : 1);
+      if (done >= first.length) setTimeout(lift, Math.max(0, 320 - (performance.now() - t0)));
     };
     first.forEach(i => { const f = () => { done++; tick(); }; i.addEventListener('load', f, { once: true }); i.addEventListener('error', f, { once: true }); });
     requestAnimationFrame(tick);
@@ -1090,8 +1156,10 @@ function initCurtain() {
     if (url.origin !== location.origin || !/\.html$|\/$/.test(url.pathname) || url.pathname === location.pathname) return;
     e.preventDefault();
     try { sessionStorage.setItem('addc-curtain', '1'); } catch (err) {}
+    name.textContent = pageName(url.pathname);
+    c.style.setProperty('--p', 0);
     c.classList.remove('lift'); c.classList.add('cover');
-    setTimeout(() => { location.href = a.href; }, 520);
+    setTimeout(() => { location.href = a.href; }, 560);
   });
   addEventListener('pageshow', ev => { if (ev.persisted) c.classList.remove('cover', 'lift'); });
 }
