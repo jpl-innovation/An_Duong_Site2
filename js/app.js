@@ -199,14 +199,16 @@ function odometer(el) {
 }
 
 /* ---------- Preloader (home, first visit of the session) ---------- */
-// ADDC's work in four photographs seen through one window: a drawing, the site, the finished room, then the
-// groundbreaking that opens the site. The photos are picked afresh on every visit. The count follows real loading
-// (fonts, the hero and the window's own pictures). When it lands, the window draws back a touch and opens into the
-// hero itself, so the page grows out of the loader. The 3D is prepared while the last photo holds still.
+// ADDC's work in four photographs seen through one window: a drawing, the site, the finished room and the
+// groundbreaking, picked afresh on every visit. The count follows real loading (fonts and the window's own pictures).
+// When it lands, the 3D of the first screen is built behind the still photo; then the photo fades and the window is an
+// opening onto the live 3D, and the four panels of moss around it slide out to the edges (transform only, so it stays
+// smooth even while the page is busy). The page's first screen grows out of the loader.
 const STORY = [
   { word: 'Bản vẽ', pool: [['img/fb/log/12-w640.jpg', 'Phương án mặt tiền nhà phố'], ['img/thietke-vungtau1-w640.jpg', 'Phối cảnh biệt thự, Vũng Tàu']] },
   { word: 'Thi công', pool: [['img/fb/log/13-w640.jpg', 'Ép cọc nhà phố liền kề'], ['img/fb/log/02-w640.jpg', 'Giàn giáo và lưới che công trình'], ['img/fb/mia/03-w640.jpg', 'Khung tòa nhà văn phòng 6 tầng'], ['img/fb/hero/site-net-w640.jpg', 'Công trường nhà phố, TP.HCM']] },
-  { word: 'Hoàn thiện', pool: [['img/fb/hotram/01-w640.jpg', 'Villa Hồ Tràm, phòng khách'], ['img/fb/hotram/03-w640.jpg', 'Villa Hồ Tràm, nội thất']] }
+  { word: 'Hoàn thiện', pool: [['img/fb/hotram/01-w640.jpg', 'Villa Hồ Tràm, phòng khách'], ['img/fb/hotram/03-w640.jpg', 'Villa Hồ Tràm, nội thất']] },
+  { word: 'Khởi công', pool: [['img/fb/hero/handshake-w640.jpg', 'Lễ khởi công nhà ở, Cát Lái']] }
 ];
 function runLoader() {
   const loader = $('#loader');
@@ -214,7 +216,6 @@ function runLoader() {
   if (!loader) { root.classList.add('loaded'); return; }
   let seen = false;
   try { seen = !!sessionStorage.getItem('addc-home'); sessionStorage.setItem('addc-home', '1'); } catch (e) {}
-  const heroImg = $('.hero-img');
   const finish = () => {
     root.classList.add('loaded');
     document.body.classList.remove('locked');
@@ -223,52 +224,26 @@ function runLoader() {
     document.dispatchEvent(new Event('addc:loaded'));
   };
   // A second visit in the same session goes straight to the page: the story is told once.
-  if (seen || reduced || !heroImg) { finish(); return; }
+  if (seen || reduced) { finish(); return; }
 
   const pick = STORY.map(st => { const [src, cap] = st.pool[Math.floor(Math.random() * st.pool.length)]; return { src, cap, word: st.word }; });
-  pick.push({ src: heroImg.currentSrc || heroImg.src, cap: 'Lễ khởi công nhà ở, Cát Lái', word: 'Khởi công', hero: true });
-  loader.innerHTML = `<div class="lw">${pick.map((f, i) => `<img class="lw-img${f.hero ? ' lw-hero' : ''}" src="${f.src}" alt="" decoding="async" ${i ? '' : 'fetchpriority="high"'} />`).join('')}</div>
+  loader.innerHTML = `<div class="lw-frame"><i class="ft"></i><i class="fb"></i><i class="fl"></i><i class="fr"></i></div>
+<div class="lw">${pick.map((f, i) => `<img class="lw-img" src="${f.src}" alt="" decoding="async" ${i ? '' : 'fetchpriority="high"'} />`).join('')}</div>
 <img class="lw-logo" src="img/logo-white.png" alt="" width="1200" height="335" />
 <div class="lw-count"><span class="lw-num"></span></div>
 <div class="lw-say"><span class="lw-word"></span><span class="lw-cap"></span></div>`;
+  loader.style.background = 'transparent';      // the frame's four panels are the moss now, around a real opening
   const box = $('.lw', loader), imgs = $$('.lw-img', loader), set = odometer($('.lw-num', loader));
-  const word = $('.lw-word', loader), cap = $('.lw-cap', loader);
-  const logo = $('.lw-logo', loader);
+  const word = $('.lw-word', loader), cap = $('.lw-cap', loader), logo = $('.lw-logo', loader);
   document.body.classList.add('locked');
 
-  // The window sits over the hero's own picture: same box, same crop, same starting zoom.
+  // The window, centred a little above the middle; the panels are placed around it.
   const place = () => {
-    // Measured without the hero's starting zoom (a transformed box reads 8% too large), and without starting
-    // its zoom transition while doing so.
-    const hs = heroImg.style;
-    hs.transition = 'none'; hs.transform = 'none';
-    const r = heroImg.getBoundingClientRect();
-    hs.transform = ''; void heroImg.offsetWidth; hs.transition = '';
-    const cs = getComputedStyle(heroImg);
-    Object.assign(box.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
-    imgs[imgs.length - 1].style.objectPosition = cs.objectPosition;
-    const heroT = cs.transform === 'none' ? 'scale(1)' : cs.transform;
-    loader.style.setProperty('--hero-t', heroT);
     const wh = Math.min(innerHeight * .5, 560), ww = Math.min(wh * .78, innerWidth * .62);
-    const cx = innerWidth / 2, cy = innerHeight * .47;
-    const raw = [cy - wh / 2 - r.top, r.right - (cx + ww / 2), r.bottom - (cy + wh / 2), cx - ww / 2 - r.left];
-    const inset = k => `inset(${raw.map(v => Math.max(0, v + k).toFixed(1) + 'px').join(' ')})`;
-    loader.style.setProperty('--win', inset(0));
-    // Through the window, the groundbreaking photo is framed on the two men shaking hands (FOCUS, as a share of the
-    // photo), not on whatever part of the hero happens to sit at the screen's centre. When the window opens, the photo
-    // glides from that framing into its place in the hero.
-    const FOCUS = [.61, .4];
-    const nw = heroImg.naturalWidth || 2048, nh = heroImg.naturalHeight || 1536;
-    const cov = Math.max(r.width / nw, r.height / nh), dw = nw * cov, dh = nh * cov;
-    const op = cs.objectPosition.split(' ').map(v => v.endsWith('%') ? parseFloat(v) / 100 : .5);
-    const k = heroT.startsWith('matrix(') ? parseFloat(heroT.slice(7)) : 1;
-    const fx = (r.width - dw) * op[0] + FOCUS[0] * dw, fy = (r.height - dh) * op[1] + FOCUS[1] * dh;
-    const sx = r.left + r.width / 2 + (fx - r.width / 2) * k, sy = r.top + r.height / 2 + (fy - r.height / 2) * k;
-    loader.style.setProperty('--lw-shift', `translate(${(cx - sx).toFixed(1)}px, ${(cy - sy).toFixed(1)}px)`);
-    // The story photos fill the window itself (whole pictures); only the last, the hero, is the view that opens out.
-    const win = { left: cx - ww / 2 - r.left, top: cy - wh / 2 - r.top, width: ww, height: wh };
-    imgs.slice(0, -1).forEach(im => Object.assign(im.style, { inset: 'auto', left: win.left + 'px', top: win.top + 'px', width: win.width + 'px', height: win.height + 'px' }));
-    loader.style.setProperty('--win-in', inset(14));   // the small draw-back before the window opens
+    const l = (innerWidth - ww) / 2, t = innerHeight * .47 - wh / 2;
+    Object.assign(box.style, { left: l + 'px', top: t + 'px', width: ww + 'px', height: wh + 'px' });
+    loader.style.setProperty('--wt', t + 'px'); loader.style.setProperty('--wb', (t + wh) + 'px');
+    loader.style.setProperty('--wl', l + 'px'); loader.style.setProperty('--wr', (l + ww) + 'px');
     // The loader's logo sits exactly where the header's logo will be.
     const lg = $('.header .logo-img'), lr = lg && lg.getBoundingClientRect();
     if (lr && lr.width) Object.assign(logo.style, { left: lr.left + 'px', top: lr.top + 'px', height: lr.height + 'px' });
@@ -285,25 +260,23 @@ function runLoader() {
   };
 
   const t0 = performance.now(), MIN = 2200, MAX = 6000;
-  const need = [heroImg, ...imgs.slice(0, 3)];
   let fonts = false, shown = 0, formed = false, beat = 0;
   (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => { fonts = true; });
-  const ready = () => need.filter(i => i.complete).length / need.length;
+  const ready = () => imgs.filter(i => i.complete).length / imgs.length;
   const open = () => {
-    loader.classList.add('open');            // the window draws back a touch, then opens into the hero
-    // The hero's zoom starts on both pictures at once, so handing over from the loader's copy is invisible.
-    setTimeout(() => { root.classList.add('loaded'); }, 1250);
+    loader.classList.add('open');            // the photo fades, then the panels slide out to the edges
+    setTimeout(() => { root.classList.add('loaded'); }, 650);
     setTimeout(() => { finish(); removeEventListener('resize', place); }, 1550);
   };
   const form = () => {
     formed = true;
     show(3);
-    // The last photo wipes in (0.9 s); then, while it holds still, the page's 3D is built (addc:formed), and the
-    // window opens as soon as that is done (1.2 s at most). Building behind a still picture means no visible stutter.
+    // The groundbreaking photo wipes in (0.9 s); while it holds still the first screen's 3D is built (addc:formed),
+    // and the window opens as soon as that is ready (1.4 s at most), onto a scene that is already drawn.
     setTimeout(() => {
-      const go = () => setTimeout(open, 120);
+      const go = () => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(open, 150)));
       if (document.querySelector('[data-3d]')) {
-        const cap2 = setTimeout(go, 1200);
+        const cap2 = setTimeout(go, 1400);
         document.addEventListener('addc:stage-built', () => { clearTimeout(cap2); go(); }, { once: true });
       } else go();
       root.dataset.formed = '1'; document.dispatchEvent(new Event('addc:formed'));
@@ -319,6 +292,32 @@ function runLoader() {
     if (shown < 1) requestAnimationFrame(step); else if (!formed) form();
   };
   requestAnimationFrame(step);
+}
+
+/* ---------- Home hook: the words over the 3D flight ---------- */
+// The same scroll that drives the camera (scene3d.js reads this section the same way, 0 to 6) shows one line at a time
+// and fills the thin progress line at the foot of the screen.
+function initHook() {
+  const sec = $('#hook');
+  if (!sec) return;
+  const lines = $$('.hook-lines li', sec), bar = $('.hook-bar', sec);
+  let ticking = false;
+  const update = () => {
+    ticking = false;
+    const r = sec.getBoundingClientRect();
+    if (r.bottom < 0 || r.top > innerHeight) return;
+    const t = clamp(-r.top / Math.max(1, r.height - innerHeight), 0, 1) * 6;
+    sec.classList.toggle('past-intro', t > .55);
+    lines.forEach(li => {
+      const from = +li.dataset.from, to = +li.dataset.to;
+      li.classList.toggle('on', t >= from && t < to);
+      li.classList.toggle('gone', t >= to);
+    });
+    if (bar) bar.style.setProperty('--hp', (t / 6).toFixed(4));
+  };
+  addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+  addEventListener('resize', update);
+  update();
 }
 
 /* ---------- Clock ---------- */
@@ -481,7 +480,7 @@ function initReveal() {
       io.unobserve(en.target);
     });
   }, { threshold: 0, rootMargin: '0px 0px -4% 0px' });
-  $$('.rv, .rv-img, .hrise:not(.hero-panel .hrise)').forEach(el => io.observe(el));
+  $$('.rv, .rv-img, .hrise:not(.hero-panel .hrise):not(.hook .hrise)').forEach(el => io.observe(el));
 }
 function countUp(el) {
   const target = +el.dataset.count;
@@ -959,7 +958,7 @@ function initTheme() {
 // shrinks back into its spot on close. Closing can start mid-opening and simply reverses. Arrows and the keyboard
 // step through the other pictures of the same section; the sharpest version of the file is swapped in once loaded.
 function initViewer() {
-  const SKIP = 'a, button, [data-open], .hero, .stage, .reel, .logos, .header, .footer, .loader, .curtain, .lb, .alt, .initials';
+  const SKIP = 'a, button, [data-open], .hero, .hook, .stage, .reel, .logos, .header, .footer, .loader, .curtain, .lb, .alt, .initials';
   const ok = img => !img.closest(SKIP) && img.getBoundingClientRect().width >= 60;
   const sharp = src => src.replace(/-w(640|1280)(\.\w+)$/, '$2');
   const lb = document.createElement('div');
@@ -1320,6 +1319,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initStageLoaders();
   initEarlyImages();
   initViewer();
+  initHook();
   useSizes();
   markLoading();
   runLoader();

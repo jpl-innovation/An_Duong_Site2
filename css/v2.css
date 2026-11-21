@@ -805,24 +805,13 @@ html[data-theme="moss"] .header.is-light { background: var(--bg); }
   box-shadow: inset 0 0 0 5px #22392b;
 }
 
-.stage[data-3d="journey"] .stage-orbit { inset-block-start: 76px; }
+
 
 @media (min-width: 1101px) {
   .stage[data-3d="build"] .stage-orbit { inset-block-start: 76px; }
 }
 
-@media (max-width: 760px) {
-  #quy-trinh { display: block; }
-  #quy-trinh .build-media {
-    display: block;
-    top: 56px;
-    z-index: 2;
-    height: 44svh;
-  }
-  #quy-trinh .build-steps { padding-block-start: 28px; }
-  #quy-trinh .build-note { display: none; }
-  .stage[data-3d="journey"] .stage-orbit { inset-block-start: 12px; }
-}
+
 
 @media (prefers-reduced-motion: reduce) {
   .stage-orbit { transition: none; }
@@ -841,19 +830,10 @@ html[data-theme="moss"] .header.is-light { background: var(--bg); }
 
 /* ---------- Home preloader: ADDC's work through one window, opening into the hero ---------- */
 .loader { overflow: hidden; }
-.loader .lw { position: fixed; overflow: hidden; clip-path: var(--win, inset(50%)); }
-.loader.open .lw { animation: lw-open 1.25s var(--ease) forwards; }
-@keyframes lw-open {
-  0% { clip-path: var(--win); }
-  16% { clip-path: var(--win-in, var(--win)); }
-  100% { clip-path: inset(0 0 0 0); }
-}
+.loader .lw { position: fixed; overflow: hidden; background: var(--ink); }
 .lw-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; clip-path: inset(100% 0 0 0); transition: clip-path .9s var(--ease); }
 .lw-img.on { clip-path: inset(0 0 0 0); animation: lw-drift 4s var(--ease-out) both; }
 @keyframes lw-drift { from { transform: scale(1.14); } to { transform: scale(1.04); } }
-.lw-hero.on { animation: none; transform: var(--lw-shift, translate(0, 0)) var(--hero-t, scale(1)); }
-.loader.open .lw-hero { transform: translate(0, 0) var(--hero-t, scale(1)); transition: transform 1.2s var(--ease), clip-path .9s var(--ease); }
-.loaded .lw-hero { transform: none; transition: transform 2.6s var(--ease-out); }
 .lw-logo { position: fixed; top: 18px; left: var(--pad); width: auto; height: 34px; transition: opacity .4s; }
 .lw-count { position: fixed; left: var(--pad); bottom: 5vh; font-family: var(--f-figure); font-weight: 300; font-size: clamp(72px, 10vw, 190px); color: var(--on-dark); transition: transform .9s var(--ease), opacity .6s; }
 .lw-say { position: fixed; right: var(--pad); bottom: calc(5vh + .4em); display: grid; justify-items: end; gap: 6px; text-align: right; overflow: hidden; padding-top: .3em; transition: transform .9s var(--ease) .06s, opacity .6s .06s; }
@@ -936,3 +916,67 @@ img.zoomable { cursor: zoom-in; }
   .lb-prev { left: 8px; } .lb-next { right: 8px; }
   .lb-cap { bottom: 22px; font-size: 13px; }
 }
+
+/* ---------- Home: the 3D hook. The first screen is the house itself, built by the scroll ---------- */
+.hook { display: block; position: relative; height: 680vh; background: #151514; color: var(--on-dark); }
+.hook-pin { position: sticky; top: 0; height: 100svh; overflow: hidden; }
+.hook .stage { position: absolute; inset: 0; aspect-ratio: auto; background: #172a1f; }
+.hook .stage canvas { pointer-events: none; }
+.hook .stage-orbit { display: none; }
+/* the words sit on a soft shade at the foot of the picture, so they read over any frame of the flight */
+.hook-pin::after { content: ''; position: absolute; inset: auto 0 0 0; height: 55%; pointer-events: none; background: linear-gradient(to top, rgba(14, 24, 18, .78), rgba(14, 24, 18, 0)); }
+.hook-intro, .hook-lines, .hook-hint, .hook-bar { position: absolute; z-index: 2; }
+.hook-intro { left: var(--pad); bottom: clamp(48px, 9vh, 110px); max-width: min(780px, 60vw); transition: opacity .5s var(--ease-out), transform .8s var(--ease-out); }
+.hook-intro .h-xl { margin-bottom: 22px; }
+.hook-intro .lead { color: var(--on-dark-2); max-width: 32em; }
+.hook.past-intro .hook-intro { opacity: 0; transform: translate3d(0, -40px, 0); pointer-events: none; }
+html.js:not(.loaded) .hook-intro .lead, html.js:not(.loaded) .hook-intro .hero-actions { opacity: 0; transform: translate3d(0, 20px, 0); }
+.hook-intro .lead, .hook-intro .hero-actions { transition: opacity .9s var(--ease-out) .5s, transform 1s var(--ease-out) .5s; }
+.hook-lines { left: var(--pad); right: var(--pad); bottom: clamp(56px, 11vh, 130px); margin: 0; padding: 0; list-style: none; pointer-events: none; }
+.hook-lines li { position: absolute; left: 0; bottom: 0; display: block; max-width: 15ch; font-size: clamp(44px, 7.4vw, 132px); line-height: .98; letter-spacing: -.01em; opacity: 0; transform: translate3d(0, 36px, 0); transition: opacity .55s var(--ease-out), transform .9s var(--ease-out); }
+.hook-lines li.on { opacity: 1; transform: none; }
+.hook-lines li.gone { transform: translate3d(0, -36px, 0); }
+.hook-lines b { font-family: var(--f-display); font-weight: 600; }
+.hook-lines i { font-family: var(--f-figure); font-style: italic; font-weight: 400; color: #E8D9B0; }
+.hook-hint { left: 50%; bottom: 26px; transform: translateX(-50%); margin: 0; font-family: var(--f-meta); font-size: 16px; letter-spacing: .02em; color: var(--on-dark-2); transition: opacity .4s; }
+.hook-hint::after { content: ''; display: block; width: 1px; height: 34px; margin: 10px auto 0; background: currentColor; transform-origin: top; animation: hook-hint 1.8s var(--ease) infinite; }
+@keyframes hook-hint { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); transform-origin: top; } 51% { transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
+.hook.past-intro .hook-hint { opacity: 0; }
+.hook-bar { left: 0; right: 0; bottom: 0; height: 2px; background: rgba(236, 233, 227, .12); }
+.hook-bar span { display: block; height: 100%; background: var(--accent); transform: scaleX(var(--hp, 0)); transform-origin: left; }
+@media (max-width: 760px) {
+  .hook { height: 600vh; }
+  .hook-intro { max-width: none; right: var(--pad); bottom: 92px; }
+  .hook-lines { bottom: 96px; }
+  .hook-lines li { font-size: clamp(40px, 12vw, 64px); }
+  .hook-hint { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hook-lines li, .hook-intro { transition: none; }
+  .hook-hint::after { animation: none; }
+}
+
+/* ---------- Loader, last step: the window becomes an opening onto the live 3D ---------- */
+/* Four panels of moss frame the window; opening slides them out to the screen's edges (transform only). */
+.lw-frame { position: fixed; inset: 0; pointer-events: none; }
+.lw-frame i { position: absolute; background: var(--ink); will-change: transform; }
+.lw-frame .ft, .lw-frame .fb { left: 0; width: 100%; height: 100vh; }
+.lw-frame .fl, .lw-frame .fr { top: 0; height: 100vh; width: 100vw; }
+.lw-frame .ft { top: 0; transform: translate3d(0, calc(var(--wt) - 100vh), 0); }
+.lw-frame .fb { top: 0; transform: translate3d(0, var(--wb), 0); }
+.lw-frame .fl { left: 0; transform: translate3d(calc(var(--wl) - 100vw), 0, 0); }
+.lw-frame .fr { left: 0; transform: translate3d(var(--wr), 0, 0); }
+.loader.open .lw-frame i { transition: transform 1.15s var(--ease) .32s; }
+.loader.open .lw-frame .ft { transform: translate3d(0, -101vh, 0); }
+.loader.open .lw-frame .fb { transform: translate3d(0, 101vh, 0); }
+.loader.open .lw-frame .fl { transform: translate3d(-101vw, 0, 0); }
+.loader.open .lw-frame .fr { transform: translate3d(101vw, 0, 0); }
+.loader.open .lw-img { opacity: 0; transition: opacity .38s var(--ease-out); }
+.loader.open .lw-logo { opacity: 0; }
+
+/* the hook's title rises once the loader has opened, like the old hero's */
+.loaded .hook .hrise .hw > span, html:not(.js) .hook .hrise .hw > span { transform: none; }
+.hook .hrise .hw > span { transition-delay: calc(var(--wi, 0) * 70ms + .35s); }
+.loader.open .lw { background: transparent; transition: background-color .38s; }
+
+.build-media .build-note { color: var(--on-dark); text-shadow: 0 1px 10px rgba(0, 0, 0, .7); }
