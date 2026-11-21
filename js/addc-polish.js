@@ -78,16 +78,3 @@ export function installFade(stage, renderer, scene, camera) {
     if (!raf) raf = requestAnimationFrame(step);
   };
 }
-
-// ---------- pacing ----------
-// Draw the 3D at about 60 frames a second whatever the screen's rate: every frame at 60 or 75 Hz, every other at
-// 120 or 144 Hz, every fourth at 240 Hz. A fixed "skip if under 15.5 ms" gate drops to 37 fps on a 75 Hz screen.
-export function framePacer() {
-  let last = 0, avg = 16.7, n = 0;
-  return now => {
-    const d = now - last; last = now;
-    if (d > 2 && d < 50) avg += (d - avg) * .05;
-    const every = Math.max(1, Math.round(16.7 / avg));
-    return n++ % every === 0;
-  };
-}

@@ -444,35 +444,6 @@ function initScrollFX() {
 }
 
 /* ---------- Reveal + counters ---------- */
-// Display headings rise word by word out of a mask; pictures wipe open from the bottom.
-function prepareMotion() {
-  if (reduced) return;
-  $$('.display, .phase-intro-title').forEach(h => {
-    h.classList.remove('reveal');
-    let i = 0;
-    const wrap = node => {
-      const w = document.createElement('span'); w.className = 'w';
-      const inner = document.createElement('span'); inner.style.setProperty('--wi', i++);
-      inner.append(node); w.append(inner); return w;
-    };
-    [...h.childNodes].forEach(n => {
-      if (n.nodeType === 3) {
-        const frag = document.createDocumentFragment();
-        n.textContent.split(/(\s+)/).forEach(part => {
-          if (!part) return;
-          frag.append(/^\s+$/.test(part) ? document.createTextNode(' ') : wrap(document.createTextNode(part)));
-        });
-        n.replaceWith(frag);
-      } else if (n.nodeType === 1 && n.tagName !== 'BR') {
-        n.replaceWith(wrap(n.cloneNode(true)));
-      }
-    });
-    h.classList.add('split');
-  });
-  // A fully clipped element never reports as visible, so the parent is watched and reveals the picture inside.
-  $$('.slide-media, .layers figure, .svc-figure, .path-media').forEach(el => { el.classList.add('wipe'); el.parentElement.classList.add('wipe-host'); });
-}
-
 // Section titles rise word by word out of a mask as they scroll in (the masks are padded for Vietnamese accents
 // and dropped once the words have landed, so ư, ơ and stacked marks are never clipped).
 function prepareTitles() {
@@ -498,21 +469,19 @@ function prepareTitles() {
   });
 }
 function initReveal() {
-  prepareMotion();
   prepareTitles();
   const io = new IntersectionObserver(entries => {
     entries.forEach(en => {
       if (!en.isIntersecting) return;
       en.target.classList.add('in');
-      // Once a masked heading has risen, drop the masks so accents and horns (ư, ơ) are never clipped.
-      if (en.target.classList.contains('split')) setTimeout(() => en.target.classList.add('done'), 1700);
+      // Once a title has risen, its masks are dropped so accents and horns (ư, ơ) are never clipped.
       if (en.target.classList.contains('hrise')) setTimeout(() => en.target.classList.add('done'), 1800);
-      const num = $('.stat-num', en.target) || $('.figure[data-count]', en.target);
+      const num = $('.figure[data-count]', en.target);
       if (num) countUp(num);
       io.unobserve(en.target);
     });
   }, { threshold: 0, rootMargin: '0px 0px -4% 0px' });
-  $$('.reveal, .contact-title, .next-title, .split, .wipe-host, .rv, .rv-img, .hrise:not(.hero-panel .hrise)').forEach(el => io.observe(el));
+  $$('.rv, .rv-img, .hrise:not(.hero-panel .hrise)').forEach(el => io.observe(el));
 }
 function countUp(el) {
   const target = +el.dataset.count;

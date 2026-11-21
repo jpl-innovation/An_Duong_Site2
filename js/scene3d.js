@@ -1,7 +1,7 @@
-import { createModelLoader, preloadModels, downloaded } from './addc-loader.js?v=20261121d';
-import { prepareModel, installFade } from './addc-polish.js?v=20261121d';
-import { installStageOrbit } from './addc-orbit.js?v=20261121d';
-import { assembleHouse, createPhasePlayer, mountedModel } from './addc-motion.js?v=20261121d';
+import { createModelLoader, preloadModels, downloaded } from './addc-loader.js?v=20261121e';
+import { prepareModel, installFade } from './addc-polish.js?v=20261121e';
+import { installStageOrbit } from './addc-orbit.js?v=20261121e';
+import { assembleHouse, createPhasePlayer, mountedModel } from './addc-motion.js?v=20261121e';
 /* ADDC 3D: procedural models, built from code so the site works today.
    When realistic GLB files are ready (see 3D-PROMPTS.md), put them in models/ and fill in MODELS below.
    An empty string keeps the procedural model. One WebGL renderer per page, paused while off-screen. */
@@ -300,6 +300,14 @@ function pump() {
   const end = performance.now() + 3;
   do { const job = gpuJobs.shift(); if (job) job(); } while (gpuJobs.length && performance.now() < end);
   if (gpuJobs.length) requestAnimationFrame(pump); else pumping = false;
+}
+// Run fn over items a few milliseconds per frame, so a long job never becomes one long freeze.
+async function inFrames(items, fn, budget = 4) {
+  for (let i = 0; i < items.length;) {
+    const end = performance.now() + budget;
+    do fn(items[i++]); while (i < items.length && performance.now() < end);
+    if (i < items.length) await new Promise(r => requestAnimationFrame(r));
+  }
 }
 function warmModel(st, model) {
   const textures = new Set();
@@ -1168,21 +1176,23 @@ async function initBlueprint(el) {
   const M = makeMats();
   let house, glb = null;
   if (MODELS.house) { try { glb = fitTo(await st.load(MODELS.house), 14); } catch (e) { console.warn('GLB lỗi', e); } }
-  if (glb) st.scene.add(glb);
-  else { house = buildHouse(M); st.scene.add(house.group); }
+  if (!glb) house = buildHouse(M);
+  const model = glb || house.group;
 
   const ink = new THREE.LineBasicMaterial({ color: '#161512', transparent: true, opacity: .85 });
   const paperFill = new THREE.MeshBasicMaterial({ color: '#F6F2E6', polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
   const clay = M.clay.clone(); clay.polygonOffset = true; clay.polygonOffsetFactor = 1; clay.polygonOffsetUnits = 1;
   const meshes = [];
-  (glb || house.group).traverse(o => {
-    if (!o.isMesh) return;
+  model.traverse(o => { if (o.isMesh) meshes.push(o); });
+  // Tracing the outline of every part of the detailed house took a third of a second in one go, landing in the
+  // middle of a scroll when the model arrived late. It is done a few parts per frame, before the house is shown.
+  await inFrames(meshes, o => {
     o.userData.mat = o.material;
     const edges = new THREE.LineSegments(new THREE.EdgesGeometry(o.geometry, 28), ink);
     edges.raycast = () => {};
     o.add(edges); o.userData.edges = edges;
-    meshes.push(o);
   });
+  st.scene.add(model);
   const setMode = mode => {
     meshes.forEach(o => {
       o.material = mode === 'line' ? paperFill : mode === 'clay' ? clay : o.userData.mat;

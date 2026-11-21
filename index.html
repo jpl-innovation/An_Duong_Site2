@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500&family=Be+Vietnam+Pro:wght@400;500&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600&family=Fraunces:opsz,wght@9..144,300&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/v2.css?v=20261121d" />
+  <link rel="stylesheet" href="css/v2.css?v=20261121e" />
   <script>document.documentElement.classList.add('js');document.documentElement.setAttribute('data-theme','moss');try{var t=new URLSearchParams(location.search).get('theme')||localStorage.getItem('addc-theme');if(t==='original')document.documentElement.removeAttribute('data-theme');if(sessionStorage.getItem('addc-curtain')){sessionStorage.removeItem('addc-curtain');document.documentElement.classList.add('arriving');}else if(!sessionStorage.getItem('addc-seen')&&!/(\/|index\.html)$/.test(location.pathname)&&!matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.classList.add('arriving');sessionStorage.setItem('addc-seen','1');}catch(e){}</script>
   <script type="importmap">
   { "imports": {
@@ -404,10 +404,10 @@
   </div>
 
   <script defer src="js/lenis.min.js"></script>
-  <script defer src="js/app.js?v=20261121d"></script>
+  <script defer src="js/app.js?v=20261121e"></script>
   <script type="module">
     let started = false;
-    const load3d = () => started ? null : (started = true, import('./js/scene3d.js?v=20261121d').catch(() => document.querySelectorAll('[data-3d]').forEach(s => {
+    const load3d = () => started ? null : (started = true, import('./js/scene3d.js?v=20261121e').catch(() => document.querySelectorAll('[data-3d]').forEach(s => {
       s.classList.add('failed');
       const t = s.querySelector('.stage-status');
       if (t) t.textContent = 'Không tải được mô hình 3D. Vui lòng kiểm tra kết nối mạng và tải lại trang.';
