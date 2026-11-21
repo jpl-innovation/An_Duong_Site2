@@ -247,12 +247,24 @@ function runLoader() {
     const cs = getComputedStyle(heroImg);
     Object.assign(box.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
     imgs[imgs.length - 1].style.objectPosition = cs.objectPosition;
-    loader.style.setProperty('--hero-t', cs.transform === 'none' ? 'none' : cs.transform);
+    const heroT = cs.transform === 'none' ? 'scale(1)' : cs.transform;
+    loader.style.setProperty('--hero-t', heroT);
     const wh = Math.min(innerHeight * .5, 560), ww = Math.min(wh * .78, innerWidth * .62);
     const cx = innerWidth / 2, cy = innerHeight * .47;
     const raw = [cy - wh / 2 - r.top, r.right - (cx + ww / 2), r.bottom - (cy + wh / 2), cx - ww / 2 - r.left];
     const inset = k => `inset(${raw.map(v => Math.max(0, v + k).toFixed(1) + 'px').join(' ')})`;
     loader.style.setProperty('--win', inset(0));
+    // Through the window, the groundbreaking photo is framed on the two men shaking hands (FOCUS, as a share of the
+    // photo), not on whatever part of the hero happens to sit at the screen's centre. When the window opens, the photo
+    // glides from that framing into its place in the hero.
+    const FOCUS = [.61, .4];
+    const nw = heroImg.naturalWidth || 2048, nh = heroImg.naturalHeight || 1536;
+    const cov = Math.max(r.width / nw, r.height / nh), dw = nw * cov, dh = nh * cov;
+    const op = cs.objectPosition.split(' ').map(v => v.endsWith('%') ? parseFloat(v) / 100 : .5);
+    const k = heroT.startsWith('matrix(') ? parseFloat(heroT.slice(7)) : 1;
+    const fx = (r.width - dw) * op[0] + FOCUS[0] * dw, fy = (r.height - dh) * op[1] + FOCUS[1] * dh;
+    const sx = r.left + r.width / 2 + (fx - r.width / 2) * k, sy = r.top + r.height / 2 + (fy - r.height / 2) * k;
+    loader.style.setProperty('--lw-shift', `translate(${(cx - sx).toFixed(1)}px, ${(cy - sy).toFixed(1)}px)`);
     // The story photos fill the window itself (whole pictures); only the last, the hero, is the view that opens out.
     const win = { left: cx - ww / 2 - r.left, top: cy - wh / 2 - r.top, width: ww, height: wh };
     imgs.slice(0, -1).forEach(im => Object.assign(im.style, { inset: 'auto', left: win.left + 'px', top: win.top + 'px', width: win.width + 'px', height: win.height + 'px' }));
@@ -973,6 +985,119 @@ function initTheme() {
 }
 
 
+/* ---------- Photo viewer: any picture on the page opens large ---------- */
+// The picture grows out of the spot it sits in (same crop, same position) to the whole picture on a dark ground, and
+// shrinks back into its spot on close. Closing can start mid-opening and simply reverses. Arrows and the keyboard
+// step through the other pictures of the same section; the sharpest version of the file is swapped in once loaded.
+function initViewer() {
+  const SKIP = 'a, button, [data-open], .hero, .stage, .reel, .logos, .header, .footer, .loader, .curtain, .lb, .alt, .initials';
+  const ok = img => !img.closest(SKIP) && img.getBoundingClientRect().width >= 60;
+  const sharp = src => src.replace(/-w(640|1280)(\.\w+)$/, '$2');
+  const lb = document.createElement('div');
+  lb.className = 'lb'; lb.setAttribute('role', 'dialog'); lb.setAttribute('aria-modal', 'true'); lb.setAttribute('aria-label', 'Xem ảnh lớn');
+  lb.setAttribute('data-lenis-prevent', '');
+  lb.innerHTML = '<div class="lb-bg"></div><div class="lb-pic"><img alt="" /></div><p class="lb-cap"></p>' +
+    '<button class="lb-btn lb-prev" type="button" aria-label="Ảnh trước"></button><button class="lb-btn lb-next" type="button" aria-label="Ảnh sau"></button>' +
+    '<button class="lb-close" type="button" aria-label="Đóng">Đóng</button>';
+  document.body.append(lb);
+  const pic = $('.lb-pic', lb), big = $('img', pic), cap = $('.lb-cap', lb);
+  let group = [], idx = 0, src = null, anim = null, open = false, lastFocus = null;
+
+  const captionOf = img => img.alt || (img.closest('figure') && $('figcaption', img.closest('figure'))?.textContent) ||
+    img.closest('[class*="-item"], .equip, .person, .news-item, .step')?.querySelector('b, h3, h4, figcaption, .equip-name')?.textContent || '';
+  // Where the whole picture fits on screen, leaving room for the caption and arrows.
+  const fit = img => {
+    const nw = img.naturalWidth || 4, nh = img.naturalHeight || 3;
+    const mw = innerWidth - (innerWidth > 760 ? 200 : 24), mh = innerHeight - (innerWidth > 760 ? 150 : 140);
+    const k = Math.min(mw / nw, mh / nh);
+    const w = nw * k, h = nh * k;
+    return { l: (innerWidth - w) / 2, t: (innerHeight - h) / 2 - 10, w, h };
+  };
+  // The transform and crop that make the full picture look exactly like the thumbnail in its spot.
+  const fromThumb = (img, box) => {
+    const r = img.getBoundingClientRect(), cs = getComputedStyle(img);
+    const s = Math.max(r.width / box.w, r.height / box.h);
+    const ox = box.w * s - r.width, oy = box.h * s - r.height;
+    const pos = cs.objectPosition.split(' ').map(v => v.endsWith('%') ? parseFloat(v) / 100 : .5);
+    const fx = pos[0] ?? .5, fy = pos[1] ?? .5;
+    return {
+      transform: `translate(${r.left - ox * fx - box.l}px, ${r.top - oy * fy - box.t}px) scale(${s})`,
+      clipPath: `inset(${(oy * fy) / s}px ${(ox * (1 - fx)) / s}px ${(oy * (1 - fy)) / s}px ${(ox * fx) / s}px)`
+    };
+  };
+  const place = box => Object.assign(pic.style, { left: box.l + 'px', top: box.t + 'px', width: box.w + 'px', height: box.h + 'px' });
+  const show = (img, first) => {
+    src = img; idx = group.indexOf(img);
+    big.src = img.currentSrc || img.src;
+    const full = sharp(big.src);
+    if (full !== big.src) { const pre = new Image(); pre.src = full; pre.decode().then(() => { if (src === img) big.src = full; }).catch(() => {}); }
+    cap.textContent = captionOf(img).trim();
+    lb.classList.toggle('single', group.length < 2);
+    const box = fit(img); place(box);
+    if (first) {
+      const from = fromThumb(img, box);
+      img.style.visibility = 'hidden';
+      anim = pic.animate([from, { transform: 'none', clipPath: 'inset(0px 0px 0px 0px)' }], { duration: reduced ? 1 : 560, easing: 'cubic-bezier(.22, 1, .36, 1)', fill: 'both' });
+    } else {
+      pic.animate([{ opacity: 0, transform: 'scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: reduced ? 1 : 300, easing: 'cubic-bezier(.22, 1, .36, 1)' });
+    }
+  };
+  const openAt = img => {
+    if (open) return;
+    open = true; lastFocus = document.activeElement;
+    const host = img.closest('section, .modal-panel, main') || document.body;
+    group = $$('img', host).filter(ok);
+    if (!group.includes(img)) group = [img];
+    lb.classList.add('on');
+    document.body.classList.add('locked');
+    show(img, true);
+    $('.lb-close', lb).focus({ preventScroll: true });
+  };
+  const close = () => {
+    if (!open) return;
+    open = false;
+    lb.classList.remove('on'); lb.classList.add('closing');   // the ground fades while the picture flies home
+    const done = () => { lb.classList.remove('closing'); if (src) src.style.visibility = ''; document.body.classList.remove('locked'); pic.style.visibility = 'hidden'; requestAnimationFrame(() => { pic.style.visibility = ''; }); if (lastFocus) lastFocus.focus({ preventScroll: true }); };
+    // Shrink back into the thumbnail's spot, from wherever the opening had got to.
+    if (src && src.getBoundingClientRect().bottom > 0 && src.getBoundingClientRect().top < innerHeight) {
+      const box = { l: parseFloat(pic.style.left), t: parseFloat(pic.style.top), w: parseFloat(pic.style.width), h: parseFloat(pic.style.height) };
+      if (anim && anim.playState === 'running' && anim.effect.getComputedTiming().progress < 1) { anim.reverse(); anim.onfinish = done; return; }
+      anim = pic.animate([{ transform: 'none', clipPath: 'inset(0px 0px 0px 0px)' }, fromThumb(src, box)], { duration: reduced ? 1 : 440, easing: 'cubic-bezier(.65, 0, .35, 1)', fill: 'both' });
+      anim.onfinish = done;
+    } else done();
+  };
+  const step = d => { if (group.length > 1) { if (src) src.style.visibility = ''; const next = group[(idx + d + group.length) % group.length]; next.style.visibility = 'hidden'; show(next, false); } };
+
+  document.addEventListener('click', e => {
+    const img = e.target.closest('main img, .modal img');
+    if (img && ok(img)) { e.preventDefault(); openAt(img); }
+  });
+  $('.lb-bg', lb).addEventListener('click', close);
+  pic.addEventListener('click', close);
+  $('.lb-close', lb).addEventListener('click', close);
+  $('.lb-prev', lb).addEventListener('click', () => step(-1));
+  $('.lb-next', lb).addEventListener('click', () => step(1));
+  addEventListener('keydown', e => {
+    if (!open) return;
+    if (e.key === 'Escape') { e.stopPropagation(); close(); }
+    if (e.key === 'ArrowRight') step(1);
+    if (e.key === 'ArrowLeft') step(-1);
+  }, true);
+  lb.addEventListener('wheel', e => { if (Math.abs(e.deltaY) > 30) close(); }, { passive: true });
+  // Swipe left or right on a phone to step, down to close.
+  let sx = 0, sy = 0;
+  lb.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+  lb.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) step(dx < 0 ? 1 : -1);
+    else if (dy > 80) close();
+  }, { passive: true });
+  addEventListener('resize', () => { if (open && src) place(fit(src)); });
+  // A pointer over a picture that opens shows the zoom cursor; the pictures themselves are marked for it.
+  const mark = () => $$('main img, .modal img').forEach(img => img.classList.toggle('zoomable', ok(img)));
+  addEventListener('load', mark); setTimeout(mark, 1500); document.addEventListener('addc:loaded', mark);
+}
+
 /* ---------- Picture reel, photo depth, hover photos, page curtain ---------- */
 function initReel() {
   const sec = $('#showcase'), track = $('#reelTrack');
@@ -989,6 +1114,9 @@ function initReel() {
   const update = () => {
     ticking = false;
     if (innerWidth <= 760 || reduced) return;
+    // The strip's length is read again every time (a transform does not change it, so this is cheap); if it differs
+    // from what the section was sized for, the section is resized first.
+    if (Math.abs(track.scrollWidth - innerWidth - dist) > 2) size();
     const r = sec.getBoundingClientRect();
     const p = clamp(-r.top / Math.max(1, sec.offsetHeight - innerHeight), 0, 1), x = p * dist, mid = innerWidth / 2;
     track.style.transform = `translate3d(${-x}px,0,0)`;
@@ -1214,6 +1342,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initCurtain();
   initStageLoaders();
   initEarlyImages();
+  initViewer();
   useSizes();
   markLoading();
   runLoader();

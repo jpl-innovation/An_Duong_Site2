@@ -863,7 +863,8 @@ html[data-theme="moss"] .header.is-light { background: var(--bg); }
 .lw-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; clip-path: inset(100% 0 0 0); transition: clip-path .9s var(--ease); }
 .lw-img.on { clip-path: inset(0 0 0 0); animation: lw-drift 4s var(--ease-out) both; }
 @keyframes lw-drift { from { transform: scale(1.14); } to { transform: scale(1.04); } }
-.lw-hero.on { animation: none; transform: var(--hero-t, none); }
+.lw-hero.on { animation: none; transform: var(--lw-shift, translate(0, 0)) var(--hero-t, scale(1)); }
+.loader.open .lw-hero { transform: translate(0, 0) var(--hero-t, scale(1)); transition: transform 1.2s var(--ease), clip-path .9s var(--ease); }
 .loaded .lw-hero { transform: none; transition: transform 2.6s var(--ease-out); }
 .lw-logo { position: fixed; top: 18px; left: var(--pad); width: auto; height: 34px; transition: opacity .4s; }
 .lw-count { position: fixed; left: var(--pad); bottom: 5vh; font-family: var(--f-figure); font-weight: 300; font-size: clamp(72px, 10vw, 190px); color: var(--on-dark); transition: transform .9s var(--ease), opacity .6s; }
@@ -919,3 +920,31 @@ html[data-theme="moss"] :is(.mosaic figure, .svc-media, .card-media, .split-medi
 
 /* the finished loader leaves the page entirely (the .js display rule above would otherwise keep it on top) */
 .loader[hidden] { display: none !important; }
+
+/* ---------- Photo viewer ---------- */
+img.zoomable { cursor: zoom-in; }
+.lb { position: fixed; inset: 0; z-index: 1800; visibility: hidden; pointer-events: none; }
+.lb.on { visibility: visible; pointer-events: auto; }
+.lb.closing { visibility: visible; }
+.lb.closing .lb-btn, .lb.closing .lb-close, .lb.closing .lb-cap { opacity: 0; transition-delay: 0s; transition-duration: .15s; }
+.lb-bg { position: absolute; inset: 0; background: rgba(18, 30, 22, .94); opacity: 0; transition: opacity .45s var(--ease-out); }
+.lb.on .lb-bg { opacity: 1; }
+.lb:not(.on) .lb-pic { pointer-events: none; }
+.lb-pic { position: fixed; transform-origin: 0 0; overflow: hidden; cursor: zoom-out; will-change: transform, clip-path; }
+.lb-pic img { width: 100%; height: 100%; object-fit: contain; }
+.lb-cap { position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 8px); max-width: min(760px, 86vw); text-align: center; color: var(--on-dark); font-size: 15px; opacity: 0; transition: opacity .35s .2s, transform .5s var(--ease-out) .2s; }
+.lb.on .lb-cap { opacity: .85; transform: translate(-50%, 0); }
+.lb-btn, .lb-close { position: fixed; color: var(--on-dark); opacity: 0; transition: opacity .3s .25s, background-color .2s; }
+.lb.on .lb-btn, .lb.on .lb-close { opacity: 1; }
+.lb.on.single .lb-btn { display: none; }
+.lb-btn { top: 50%; width: 64px; height: 64px; margin-top: -32px; }
+.lb-btn::before { content: ''; position: absolute; inset: 0; margin: auto; width: 16px; height: 16px; border-top: 1.5px solid currentColor; border-left: 1.5px solid currentColor; }
+.lb-prev { left: 28px; } .lb-prev::before { transform: translateX(3px) rotate(-45deg); }
+.lb-next { right: 28px; } .lb-next::before { transform: translateX(-3px) rotate(135deg); }
+.lb-btn:hover, .lb-close:hover { color: var(--accent); }
+.lb-close { top: 18px; right: var(--pad); padding: 12px 4px; font-family: var(--f-meta); font-size: 18px; }
+@media (max-width: 760px) {
+  .lb-btn { top: auto; bottom: 64px; margin: 0; width: 56px; height: 56px; }
+  .lb-prev { left: 8px; } .lb-next { right: 8px; }
+  .lb-cap { bottom: 22px; font-size: 13px; }
+}

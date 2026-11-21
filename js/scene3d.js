@@ -1,7 +1,7 @@
-import { createModelLoader, preloadModels, downloaded } from './addc-loader.js?v=20261121c';
-import { prepareModel, installFade } from './addc-polish.js?v=20261121c';
-import { installStageOrbit } from './addc-orbit.js?v=20261121c';
-import { assembleHouse, createPhasePlayer, mountedModel } from './addc-motion.js?v=20261121c';
+import { createModelLoader, preloadModels, downloaded } from './addc-loader.js?v=20261121d';
+import { prepareModel, installFade } from './addc-polish.js?v=20261121d';
+import { installStageOrbit } from './addc-orbit.js?v=20261121d';
+import { assembleHouse, createPhasePlayer, mountedModel } from './addc-motion.js?v=20261121d';
 /* ADDC 3D: procedural models, built from code so the site works today.
    When realistic GLB files are ready (see 3D-PROMPTS.md), put them in models/ and fill in MODELS below.
    An empty string keeps the procedural model. One WebGL renderer per page, paused while off-screen. */
