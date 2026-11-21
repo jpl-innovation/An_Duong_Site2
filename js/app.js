@@ -204,9 +204,9 @@ function odometer(el) {
 // (fonts, the hero and the window's own pictures). When it lands, the window draws back a touch and opens into the
 // hero itself, so the page grows out of the loader. The 3D is prepared while the last photo holds still.
 const STORY = [
-  { word: 'Bản vẽ', pool: [['img/fb/log/12-w1280.jpg', 'Phương án mặt tiền nhà phố'], ['img/thietke-vungtau1-w1280.jpg', 'Phối cảnh biệt thự, Vũng Tàu']] },
-  { word: 'Thi công', pool: [['img/fb/log/13-w1280.jpg', 'Ép cọc nhà phố liền kề'], ['img/fb/log/02-w1280.jpg', 'Giàn giáo và lưới che công trình'], ['img/fb/mia/03-w1280.jpg', 'Khung tòa nhà văn phòng 6 tầng'], ['img/fb/hero/site-net-w1280.jpg', 'Công trường nhà phố, TP.HCM']] },
-  { word: 'Hoàn thiện', pool: [['img/fb/hotram/01-w1280.jpg', 'Villa Hồ Tràm, phòng khách'], ['img/fb/hotram/03-w1280.jpg', 'Villa Hồ Tràm, nội thất']] }
+  { word: 'Bản vẽ', pool: [['img/fb/log/12-w640.jpg', 'Phương án mặt tiền nhà phố'], ['img/thietke-vungtau1-w640.jpg', 'Phối cảnh biệt thự, Vũng Tàu']] },
+  { word: 'Thi công', pool: [['img/fb/log/13-w640.jpg', 'Ép cọc nhà phố liền kề'], ['img/fb/log/02-w640.jpg', 'Giàn giáo và lưới che công trình'], ['img/fb/mia/03-w640.jpg', 'Khung tòa nhà văn phòng 6 tầng'], ['img/fb/hero/site-net-w640.jpg', 'Công trường nhà phố, TP.HCM']] },
+  { word: 'Hoàn thiện', pool: [['img/fb/hotram/01-w640.jpg', 'Villa Hồ Tràm, phòng khách'], ['img/fb/hotram/03-w640.jpg', 'Villa Hồ Tràm, nội thất']] }
 ];
 function runLoader() {
   const loader = $('#loader');
@@ -621,7 +621,7 @@ function initPreview() {
   addEventListener('scroll', () => { if (current && document.documentElement.classList.contains('is-scrolling')) hide(); }, { passive: true });
   // Load every photo ahead of time so the first hover shows it at once.
   const preload = () => PROJECTS.forEach(p => { const i = new Image(); i.src = p.image; });
-  'requestIdleCallback' in window ? requestIdleCallback(preload, { timeout: 2500 }) : setTimeout(preload, 1500);
+  afterFirstScreen(() => ('requestIdleCallback' in window ? requestIdleCallback(preload, { timeout: 2500 }) : preload()));
 }
 
 function initFilters() {
@@ -1186,6 +1186,14 @@ function markLoading(root = document) {
     if (ldWatch) ldWatch.observe(fr);
   });
 }
+// Work that only helps later (pictures further down, hover photos) waits until the first screen is ready: until the home
+// loader has opened, or the page has loaded. Before that it would only take bandwidth from what the visitor sees first.
+function afterFirstScreen(fn) {
+  const loading = document.getElementById('loader') && !document.documentElement.classList.contains('loaded');
+  if (loading) document.addEventListener('addc:loaded', () => setTimeout(fn, 200), { once: true });
+  else if (document.readyState === 'complete') setTimeout(fn, 200);
+  else addEventListener('load', () => setTimeout(fn, 200), { once: true });
+}
 // Pictures start downloading about two screens before they scroll in, not at the browser's own short lazy distance,
 // so a quick scroll meets finished photos instead of empty boxes.
 function initEarlyImages() {
@@ -1196,7 +1204,7 @@ function initEarlyImages() {
     io.unobserve(e.target);
     e.target.loading = 'eager';
   }), { rootMargin: '220% 0px' });
-  imgs.forEach(i => io.observe(i));
+  afterFirstScreen(() => imgs.forEach(i => io.observe(i)));
 }
 // 3D stages: a rolling percentage of the models really downloaded, with a hairline that fills under it.
 function initStageLoaders() {

@@ -1,7 +1,7 @@
-import { createModelLoader, preloadModels, downloaded } from './addc-loader.js?v=20261121e';
-import { prepareModel, installFade } from './addc-polish.js?v=20261121e';
-import { installStageOrbit } from './addc-orbit.js?v=20261121e';
-import { assembleHouse, createPhasePlayer, mountedModel } from './addc-motion.js?v=20261121e';
+import { createModelLoader, preloadModels, downloaded } from './addc-loader.js?v=20261121f';
+import { prepareModel, installFade } from './addc-polish.js?v=20261121f';
+import { installStageOrbit } from './addc-orbit.js?v=20261121f';
+import { assembleHouse, createPhasePlayer, mountedModel } from './addc-motion.js?v=20261121f';
 /* ADDC 3D: procedural models, built from code so the site works today.
    When realistic GLB files are ready (see 3D-PROMPTS.md), put them in models/ and fill in MODELS below.
    An empty string keeps the procedural model. One WebGL renderer per page, paused while off-screen. */
@@ -1714,7 +1714,12 @@ const STAGE_MODELS = {
   room: () => [MODELS.room, MODELS.extras, MODELS.giuong, MODELS['tu-ao'], MODELS['ban-lam-viec'], MODELS['ke-sach']]
 };
 const saveData = navigator.connection && (navigator.connection.saveData || /2g/.test(navigator.connection.effectiveType || ''));
-if (!saveData) preloadModels(stages.flatMap(el => (STAGE_MODELS[el.dataset['3d']] || (() => []))()));
+// The background downloads wait until the first screen is ready (the home loader has opened, or the page has loaded),
+// so they never take bandwidth from the pictures the visitor is looking at first.
+const preloadAll = () => { if (!saveData) preloadModels(stages.flatMap(el => (STAGE_MODELS[el.dataset['3d']] || (() => []))())); };
+if (document.getElementById('loader') && !document.documentElement.classList.contains('loaded')) document.addEventListener('addc:loaded', preloadAll, { once: true });
+else if (document.readyState === 'complete') setTimeout(preloadAll, 200);
+else addEventListener('load', () => setTimeout(preloadAll, 200), { once: true });
 // Every stage is built as soon as this module arrives, while the visitor is still on the first screen
 // (on the home page the module itself is only fetched after the intro, at an idle moment).
 // Building later meant shader compiles landing in the middle of a scroll.
