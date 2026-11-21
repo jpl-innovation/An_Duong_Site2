@@ -45,7 +45,7 @@ export function createPhasePlayer(scene, urls, loadModel, prioritizeModel) {
     const current = models[index] || models.slice(0, index).reverse().find(Boolean);
     if (!current) return false;
     const canShow = part => !(hideTemporary && part.kind.startsWith('Temp_')) &&
-      !(interior && part.level < 3.6 && /^Interior(Wall|Sofa|Lamp)$/.test(part.kind));
+      !(interior && part.level < 3.6 && /^Interior/.test(part.kind));
     const previous = models[index - 1];
     const time = reduced || current !== models[index] ? 1 : clamp(progress - index);
     visible.forEach(model => { model.visible = false; });

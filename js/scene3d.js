@@ -1,4 +1,5 @@
 import { createModelLoader } from './addc-loader.js';
+import { prepareModel, installFade, framePacer } from './addc-polish.js';
 import { installStageOrbit } from './addc-orbit.js';
 import { assembleHouse, createPhasePlayer, mountedModel } from './addc-motion.js';
 /* ADDC 3D: procedural models, built from code so the site works today.
@@ -287,7 +288,8 @@ function fitTo(obj, size) {
   return obj;
 }
 const loader = new GLTFLoader();
-const { load: loadGLB, prioritize: prioritizeModel } = createModelLoader(loader);
+const { load: rawLoadGLB, prioritize: prioritizeModel } = createModelLoader(loader);
+const loadGLB = (url, opts) => rawLoadGLB(url, opts).then(prepareModel);
 
 /* ---------- Stage: renderer, camera, light, render-on-visible ---------- */
 // Heavy one-off work (building a model, compiling its shaders) waits for a pause in scrolling, so it never
@@ -352,10 +354,9 @@ function makeStage(el, { paper = false, cam = [4, 3, 5], target = [0, .8, 0], au
   const ticks = [];
   const clock = new THREE.Clock();
   // The model is drawn at most 60 times a second; on 120 and 240 Hz screens the page itself keeps the full rate.
-  let lastDraw = 0;
+  const pace = framePacer();
   const tick = now => {
-    if (now - lastDraw < 15.5) return;
-    lastDraw = now;
+    if (!pace(now)) return;
     const dt = Math.min(clock.getDelta(), .05);
     ticks.forEach(f => f(dt));
     controls.update();
@@ -384,7 +385,8 @@ function makeStage(el, { paper = false, cam = [4, 3, 5], target = [0, .8, 0], au
     (renderer.compileAsync ? renderer.compileAsync(scene, camera) : Promise.resolve()).then(warm).catch(warm);
   }), 600);
 
-  return { renderer, scene, camera, controls, orbitView, sun, hemi, catcher, ticks, ready: () => el.classList.add('ready') };
+  const fade = installFade(el, renderer, scene, camera);
+  return { renderer, scene, camera, controls, orbitView, fade, sun, hemi, catcher, ticks, ready: () => el.classList.add('ready') };
 }
 function fail(el, msg) {
   el.classList.add('failed');
@@ -754,8 +756,8 @@ async function initDetails(el) {
     if (!cache[id]) cache[id] = buildDetail(id);
     const next = await cache[id];
     if (request !== selection) return;
-    if (cur) holder.remove(cur.wrap);
-    cur = next; holder.add(cur.wrap);
+    const swapDetail = () => { if (cur) holder.remove(cur.wrap); cur = next; holder.add(cur.wrap); };
+    if (cur) st.fade(swapDetail); else swapDetail();
     const d = INFO[id] || { steps: [], keys: [] };
     if (titleEl) titleEl.textContent = d.title || '';
     if (stepsEl) stepsEl.innerHTML = d.steps.map(s => `<li>${s}</li>`).join('');
@@ -854,18 +856,18 @@ async function initCatalog(el, { builders, attr, info, specSel, size = 2.4, cam 
     el.classList.remove('ready');
     const obj = await build(id);
     if (request !== selection) return;
-    if (current) holder.remove(current);
-    current = obj; holder.add(obj);
+    const swap = () => { if (current) holder.remove(current); current = obj; holder.add(obj); };
+    if (current) st.fade(swap); else swap();
     enterT = reduced ? 1 : 0;
     st.ready();
   };
   st.ticks.push(dt => {
     if (enterT < 1) {
-      enterT = Math.min(1, enterT + dt * 1.6);
+      enterT = Math.min(1, enterT + dt * 1.8);
       const e = easeOut(enterT);
-      holder.scale.setScalar(.82 + .18 * e);
-      holder.rotation.y = (1 - e) * -.8;
-      holder.position.y = (1 - e) * -.3;
+      holder.scale.setScalar(.94 + .06 * e);
+      holder.rotation.y = (1 - e) * -.35;
+      holder.position.y = (1 - e) * -.12;
     }
   });
 
@@ -1104,7 +1106,7 @@ async function initBuild(el) {
   document.querySelectorAll('[data-build-opt]').forEach(b => b.addEventListener('click', () => {
     const k = b.dataset.buildOpt;
     document.querySelectorAll(`[data-build-opt="${k}"]`).forEach(x => { x.classList.toggle('active', x === b); x.setAttribute('aria-pressed', x === b); });
-    opts[k](b.dataset.v);
+    st.fade(() => opts[k](b.dataset.v));
   }));
   st.ticks.push(dt => {
     pf += (target - pf) * Math.min(1, dt * (reduced ? 60 : 5));
@@ -1156,7 +1158,7 @@ async function initBlueprint(el) {
   const btns = document.querySelectorAll('[data-bp-mode]');
   btns.forEach(b => b.addEventListener('click', () => {
     btns.forEach(x => { x.setAttribute('aria-pressed', x === b); x.classList.toggle('active', x === b); });
-    setMode(b.dataset.bpMode);
+    st.fade(() => setMode(b.dataset.bpMode));
   }));
   setMode('line');
 
@@ -1202,7 +1204,7 @@ async function initBlueprint(el) {
   const vbtns = document.querySelectorAll('[data-bp-view]');
   vbtns.forEach(b => b.addEventListener('click', () => {
     vbtns.forEach(x => { x.setAttribute('aria-pressed', x === b); x.classList.toggle('active', x === b); });
-    setView(b.dataset.bpView);
+    st.fade(() => setView(b.dataset.bpView));
   }));
 
   // Facade finish: changes the render coat in the "Vật liệu" view (and switches to it).
@@ -1212,8 +1214,10 @@ async function initBlueprint(el) {
   document.querySelectorAll('[data-bp-facade]').forEach(b => b.addEventListener('click', () => {
     document.querySelectorAll('[data-bp-facade]').forEach(x => { x.classList.toggle('active', x === b); x.setAttribute('aria-pressed', x === b); });
     const k = b.dataset.bpFacade;
-    renderCoat.forEach(m => m.color.set(FACADE[k][0]));
-    M.plaster.map = plasterMaps[k] || (plasterMaps[k] = T.plaster(FACADE[k][0])); M.plaster.needsUpdate = true;
+    st.fade(() => {
+      renderCoat.forEach(m => m.color.set(FACADE[k][0]));
+      M.plaster.map = plasterMaps[k] || (plasterMaps[k] = T.plaster(FACADE[k][0])); M.plaster.needsUpdate = true;
+    });
     const real = document.querySelector('[data-bp-mode="real"]'); if (real && !real.classList.contains('active')) real.click();
   }));
   // Sun study: the hour of day moves the sun along its arc, so the shadows show how the house sits in the light.
@@ -1226,7 +1230,18 @@ async function initBlueprint(el) {
     st.hemi.intensity = .2 + up * .4;
     if (sunOut) sunOut.textContent = String(Math.floor(h)).padStart(2, '0') + ':' + (h % 1 ? '30' : '00');
   };
-  if (sun) { sun.addEventListener('input', () => setSun(+sun.value)); setSun(+sun.value); }
+  if (sun) {
+    // The slider moves in half hours; the sun glides between them instead of jumping.
+    let hour = +sun.value, goal = hour;
+    const label = () => { if (sunOut) sunOut.textContent = String(Math.floor(goal)).padStart(2, '0') + ':' + (goal % 1 ? '30' : '00'); };
+    setSun(hour); label();
+    sun.addEventListener('input', () => { goal = +sun.value; label(); });
+    st.ticks.push(dt => {
+      if (Math.abs(goal - hour) < .002) return;
+      hour += (goal - hour) * Math.min(1, dt * (reduced ? 60 : 5));
+      setSun(hour); label();
+    });
+  }
 
   {
     const apply = glb ? assembleHouse(glb) : progress => applyParts(house.parts, progress);
@@ -1376,13 +1391,13 @@ async function initRoom(el) {
     const b = document.querySelector(`[data-room="${k}"].active`);
     return b ? (b.getAttribute('title') || b.textContent.trim()) : '';
   }).filter(Boolean);
-  const choose = b => {
+  const choose = (b, animate) => {
     const k = b.dataset.room;
     document.querySelectorAll(`[data-room="${k}"]`).forEach(x => { x.setAttribute('aria-pressed', x === b); x.classList.toggle('active', x === b); });
-    set[k](b.dataset.v);
+    if (animate) st.fade(() => set[k](b.dataset.v)); else set[k](b.dataset.v);
     if (summary) summary.innerHTML = '<b>Cấu hình đang xem:</b> ' + describe().join(', ');
   };
-  document.querySelectorAll('[data-room]').forEach(b => b.addEventListener('click', () => choose(b)));
+  document.querySelectorAll('[data-room]').forEach(b => b.addEventListener('click', () => choose(b, true)));
   // Start from whatever the page marks as active in each group.
   order.forEach(k => { const b = document.querySelector(`[data-room="${k}"].active`) || document.querySelector(`[data-room="${k}"]`); if (b) choose(b); });
   const presets = [

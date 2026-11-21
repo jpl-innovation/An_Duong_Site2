@@ -851,3 +851,5 @@ html[data-theme="moss"] .header.is-light { background: var(--bg); }
 @media (prefers-reduced-motion: reduce) {
   .stage-orbit { transition: none; }
 }
+
+.stage canvas.stage-veil { position: absolute; pointer-events: none; visibility: hidden; opacity: 0; transition: none; }
